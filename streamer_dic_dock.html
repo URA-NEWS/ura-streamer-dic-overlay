@@ -68,14 +68,23 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
   border-radius:6px;padding:6px;cursor:pointer;font-size:11px;font-weight:700}
 .presets button:hover{border-color:var(--gold);color:var(--gold)}
 .vid-list{border:1px solid var(--gold);border-radius:8px;background:var(--panel);margin-top:6px;
-  max-height:210px;overflow-y:auto}
-.vid{display:flex;gap:9px;align-items:center;padding:7px;border-bottom:1px solid var(--line);cursor:pointer}
+  max-height:260px;overflow-y:auto}
+.vid{display:flex;gap:9px;align-items:center;padding:7px;border-bottom:1px solid var(--line)}
 .vid:last-child{border-bottom:none}
-.vid:hover{background:var(--panel-2)}
+.vid.play{cursor:pointer}
+.vid.play:hover{background:var(--panel-2)}
 .vid img{width:78px;height:44px;object-fit:cover;border-radius:4px;background:#000;flex-shrink:0}
 .vid .no-th{width:78px;height:44px;border-radius:4px;background:var(--panel-2);
   display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.vid .no-th.x{background:#000;color:#fff;font-weight:900;font-size:19px}
+.vid-body{flex:1;min-width:0}
 .vid-t{font-size:12px;font-weight:700;line-height:1.35}
+.vid-u{font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
+.copy{background:none;border:1px solid var(--gold);color:var(--gold);border-radius:5px;
+  padding:6px 10px;cursor:pointer;font-size:11px;font-weight:700;flex-shrink:0}
+.copy:hover{background:var(--gold);color:#1a1400}
+.copy.done{background:var(--green);border-color:var(--green);color:#001217}
+.copybox{width:100%;margin-top:6px;font-size:11px;padding:6px 8px;display:none}
 </style>
 </head>
 <body>
@@ -102,8 +111,9 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
     <button class="act warn" id="hideBtn">オーバーレイを非表示</button>
   </div>
 
-  <h3 id="vidHead" style="display:none">代表的配信（タップで再生）</h3>
+  <h3 id="vidHead" style="display:none">代表的配信</h3>
   <div class="vid-list" id="vidList" style="display:none"></div>
+  <input type="text" class="copybox" id="copybox" readonly>
   <div class="row" id="vidStopRow" style="display:none">
     <button class="act warn" id="stopVidBtn">動画を停止</button>
   </div>
@@ -156,6 +166,7 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
   <h3>代表的配信</h3>
   <div id="vidWrap"></div>
   <button class="act gold" id="vidAdd">＋代表的配信を追加</button>
+  <div class="hint">YouTube / ツイキャス / Kick はオーバーレイで再生。X は URL コピーのみ。</div>
 
   <label class="f">紹介文</label>
   <textarea id="f-intro" placeholder="紹介文..."></textarea>
@@ -286,7 +297,13 @@ function avatarHtml(s) {
   return s.photoUrl ? `<img class="av" src="${s.photoUrl}" alt="">` : `<div class="av no">📷</div>`;
 }
 
-// YouTubeサムネイル取得
+function isX(u){
+  try {
+    const h = new URL(u).hostname.replace('www.','');
+    return h === 'x.com' || h === 'twitter.com' || h === 'mobile.twitter.com';
+  } catch { return false; }
+}
+
 function thumbUrl(u){
   if (!u) return '';
   try {
@@ -320,6 +337,29 @@ function render() {
   });
 }
 
+function copyText(text, btn){
+  const done = () => {
+    if (!btn) return;
+    const old = btn.textContent;
+    btn.textContent = 'コピー済';
+    btn.classList.add('done');
+    setTimeout(() => { btn.textContent = old; btn.classList.remove('done'); }, 1600);
+  };
+  if (navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(done).catch(() => fallback(text, done));
+  } else {
+    fallback(text, done);
+  }
+}
+function fallback(text, done){
+  const box = $('copybox');
+  box.style.display = 'block';
+  box.value = text;
+  box.focus(); box.select();
+  try { document.execCommand('copy'); done(); } catch {}
+  setTimeout(() => { box.style.display = 'none'; }, 2500);
+}
+
 function renderVideoList(s){
   const vids = (s.videos || []).filter(v => v.title || v.url);
   const L = $('vidList');
@@ -333,13 +373,30 @@ function renderVideoList(s){
   L.style.display = '';
   $('vidStopRow').style.display = '';
   L.innerHTML = '';
+
   vids.forEach(v => {
-    const th = thumbUrl(v.url);
     const d = document.createElement('div');
-    d.className = 'vid';
-    d.innerHTML = (th ? `<img src="${th}" alt="">` : `<div class="no-th">▶</div>`)
-      + `<div class="vid-t">${v.title || v.url}</div>`;
-    d.onclick = () => send({type:'playVideo', url:v.url, title:v.title});
+    const x = isX(v.url);
+
+    if (x){
+      d.className = 'vid';
+      d.innerHTML = `<div class="no-th x">𝕏</div>
+        <div class="vid-body">
+          <div class="vid-t">${v.title || '(無題)'}</div>
+          <div class="vid-u">${v.url || ''}</div>
+        </div>`;
+      const b = document.createElement('button');
+      b.className = 'copy';
+      b.textContent = 'URLコピー';
+      b.onclick = ev => { ev.stopPropagation(); copyText(v.url, b); };
+      d.appendChild(b);
+    } else {
+      const th = thumbUrl(v.url);
+      d.className = 'vid play';
+      d.innerHTML = (th ? `<img src="${th}" alt="">` : `<div class="no-th">▶</div>`)
+        + `<div class="vid-body"><div class="vid-t">${v.title || v.url}</div></div>`;
+      d.onclick = () => send({type:'playVideo', url:v.url, title:v.title});
+    }
     L.appendChild(d);
   });
 }
@@ -426,7 +483,7 @@ function renderVids() {
     const d = document.createElement('div'); d.className = 'sub';
     d.innerHTML = `
       <input type="text" placeholder="タイトル" value="${x.title||''}" data-k="title" data-i="${i}">
-      <input type="text" placeholder="URL（YouTube / ツイキャス / Kick）" value="${x.url||''}" data-k="url" data-i="${i}">
+      <input type="text" placeholder="URL（YouTube / ツイキャス / Kick / X）" value="${x.url||''}" data-k="url" data-i="${i}">
       <button class="mini">削除</button>`;
     d.querySelectorAll('input').forEach(inp => {
       inp.oninput = e => { editing.videos[e.target.dataset.i][e.target.dataset.k] = e.target.value; };
