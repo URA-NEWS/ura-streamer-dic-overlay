@@ -85,6 +85,12 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
 .copy:hover{background:var(--gold);color:#1a1400}
 .copy.done{background:var(--green);border-color:var(--green);color:#001217}
 .copybox{width:100%;margin-top:6px;font-size:11px;padding:6px 8px;display:none}
+.vol-box{border:1px solid var(--gold);border-radius:8px;padding:9px;margin-top:8px;background:var(--panel)}
+.vol-box label{display:block;font-size:12px;color:var(--gold);font-weight:700;margin-bottom:6px}
+.vol-presets{display:flex;gap:5px;margin-top:6px}
+.vol-presets button{flex:1;background:var(--panel-2);border:1px solid var(--line);color:var(--dim);
+  border-radius:5px;padding:5px;cursor:pointer;font-size:11px;font-weight:700}
+.vol-presets button:hover{border-color:var(--gold);color:var(--gold)}
 </style>
 </head>
 <body>
@@ -114,6 +120,22 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
   <h3 id="vidHead" style="display:none">代表的配信</h3>
   <div class="vid-list" id="vidList" style="display:none"></div>
   <input type="text" class="copybox" id="copybox" readonly>
+
+  <div class="vol-box" id="volBox" style="display:none">
+    <label>動画の音量</label>
+    <div class="slider-row">
+      <input type="range" id="s-vol" min="0" max="100" step="1" value="60">
+      <span class="val" id="v-vol">60%</span>
+    </div>
+    <div class="vol-presets">
+      <button data-vol="0">ミュート</button>
+      <button data-vol="25">25%</button>
+      <button data-vol="50">50%</button>
+      <button data-vol="75">75%</button>
+      <button data-vol="100">100%</button>
+    </div>
+  </div>
+
   <div class="row" id="vidStopRow" style="display:none">
     <button class="act warn" id="stopVidBtn">動画を停止</button>
   </div>
@@ -312,8 +334,8 @@ function thumbUrl(u){
     let vid = '';
     if (h === 'youtube.com' || h === 'm.youtube.com'){
       vid = url.searchParams.get('v') || '';
-      if (!vid && url.pathname.startsWith('/live/')) vid = url.pathname.split('/')[2] || '';
-      if (!vid && url.pathname.startsWith('/shorts/')) vid = url.pathname.split('/')[2] || '';
+      const p = url.pathname.split('/').filter(Boolean);
+      if (!vid && (p[0] === 'live' || p[0] === 'shorts' || p[0] === 'embed')) vid = p[1] || '';
     }
     if (h === 'youtu.be') vid = url.pathname.slice(1);
     return vid ? `https://i.ytimg.com/vi/${vid}/mqdefault.jpg` : '';
@@ -367,18 +389,18 @@ function renderVideoList(s){
     $('vidHead').style.display = 'none';
     L.style.display = 'none';
     $('vidStopRow').style.display = 'none';
+    $('volBox').style.display = 'none';
     return;
   }
   $('vidHead').style.display = '';
   L.style.display = '';
   $('vidStopRow').style.display = '';
+  $('volBox').style.display = vids.some(v => !isX(v.url)) ? '' : 'none';
   L.innerHTML = '';
 
   vids.forEach(v => {
     const d = document.createElement('div');
-    const x = isX(v.url);
-
-    if (x){
+    if (isX(v.url)){
       d.className = 'vid';
       d.innerHTML = `<div class="no-th x">𝕏</div>
         <div class="vid-body">
@@ -400,6 +422,16 @@ function renderVideoList(s){
     L.appendChild(d);
   });
 }
+
+function sendVolume(){
+  const v = +$('s-vol').value;
+  $('v-vol').textContent = v + '%';
+  send({type:'setVolume', volume:v});
+}
+$('s-vol').oninput = sendVolume;
+document.querySelectorAll('.vol-presets button').forEach(b => {
+  b.onclick = () => { $('s-vol').value = b.dataset.vol; sendVolume(); };
+});
 
 $('stopVidBtn').onclick  = () => send({type:'stopVideo'});
 $('hideBtn').onclick     = () => send({type:'hideStreamer'});
@@ -618,11 +650,13 @@ function applySettingsUI(st) {
   $('s-bg').value = Math.round((st.bgOpacity ?? 0.88) * 100);
   $('s-lvl').value = st.bgLevel ?? 12;
   $('s-font').value = st.fontScale ?? 1;
+  $('s-vol').value = st.volume ?? 60;
   const raw = +$('s-bg').value / 100;
   $('v-width').textContent = $('s-width').value + 'px';
   $('v-bg').textContent = $('s-bg').value + '%';
   $('v-lvl').textContent = $('s-lvl').value;
   $('v-font').textContent = (+$('s-font').value).toFixed(2) + 'x';
+  $('v-vol').textContent = $('s-vol').value + '%';
   const [r,g,b] = bgRGB(+$('s-lvl').value);
   $('swatch').style.background = `rgba(${r},${g},${b},${Math.pow(raw,0.45).toFixed(3)})`;
 }
