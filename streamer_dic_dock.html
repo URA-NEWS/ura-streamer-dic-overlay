@@ -26,7 +26,7 @@ textarea{min-height:70px;resize:vertical}
 .gojuon{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}
 .gbtn{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:var(--dim);cursor:pointer;font-size:12px;font-weight:700}
 .gbtn.active{background:var(--cyan);color:#001217}
-.list{max-height:280px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
+.list{max-height:240px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
 .item{display:flex;gap:10px;align-items:center;padding:9px;border-bottom:1px solid var(--line);cursor:pointer}
 .item:last-child{border-bottom:none}
 .item:hover{background:var(--panel)}
@@ -42,16 +42,21 @@ button.warn{border-color:var(--magenta);color:var(--magenta)}
 button.warn:hover{background:var(--magenta);color:#000}
 button.ok{border-color:var(--green);color:var(--green)}
 button.ok:hover{background:var(--green);color:#001217}
+.scroll-pad{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.scroll-pad button{background:var(--panel);border:1px solid var(--line);color:var(--dim);
+  padding:10px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700}
+.scroll-pad button:hover{border-color:var(--green);color:var(--green)}
 .status{font-size:11px;color:var(--dim);margin-top:8px;padding:6px;text-align:center;border-top:1px solid var(--line)}
 .sub{border:1px solid var(--line);border-radius:6px;padding:8px;margin-bottom:6px;background:var(--panel)}
-.sub .row{margin-top:4px}
 .sub input{margin-bottom:4px}
 .mini{background:none;border:1px solid var(--magenta);color:var(--magenta);border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px}
 .preview{width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--green);display:block;margin:6px auto;background:var(--panel)}
 label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
 .slider-row{display:flex;align-items:center;gap:8px}
 .slider-row input[type=range]{flex:1}
-.val{min-width:52px;text-align:right;font-size:12px;color:var(--cyan)}
+.val{min-width:56px;text-align:right;font-size:12px;color:var(--cyan)}
+.swatch{height:26px;border-radius:6px;border:1px solid var(--line);margin-top:6px}
+.hint{font-size:11px;color:var(--dim);margin-top:3px}
 </style>
 </head>
 <body>
@@ -62,18 +67,24 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
   <button class="tab" data-pane="p-set">設定</button>
 </div>
 
-<!-- 表示タブ -->
 <div class="pane active" id="p-show">
   <input type="text" id="search" placeholder="配信者名で検索...">
   <div class="gojuon" id="gojuon"></div>
   <div class="list" id="list"></div>
+
+  <h3>オーバーレイ操作</h3>
+  <div class="scroll-pad">
+    <button id="sc-top">⏫ 先頭へ</button>
+    <button id="sc-bottom">⏬ 末尾へ</button>
+    <button id="sc-up">▲ 上へ</button>
+    <button id="sc-down">▼ 下へ</button>
+  </div>
   <div class="row">
     <button class="act warn" id="hideBtn">オーバーレイを非表示</button>
   </div>
   <div class="status" id="status">接続中...</div>
 </div>
 
-<!-- 編集タブ -->
 <div class="pane" id="p-edit">
   <div class="row">
     <button class="act ok" id="newBtn">＋新規</button>
@@ -119,7 +130,6 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
   <div class="status" id="editStatus">&nbsp;</div>
 </div>
 
-<!-- 設定タブ -->
 <div class="pane" id="p-set">
   <label class="f">オーバーレイ横幅</label>
   <div class="slider-row">
@@ -127,11 +137,19 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
     <span class="val" id="v-width">640px</span>
   </div>
 
-  <label class="f">背景の不透明度（0＝完全透過 / 1＝黒ベタ）</label>
+  <label class="f">背景の不透明度</label>
   <div class="slider-row">
-    <input type="range" id="s-bg" min="0" max="1" step="0.05" value="1">
-    <span class="val" id="v-bg">1.00</span>
+    <input type="range" id="s-bg" min="0" max="100" step="1" value="85">
+    <span class="val" id="v-bg">85%</span>
   </div>
+  <div class="hint">0%＝完全透過 / 100%＝不透明</div>
+
+  <label class="f">背景の明るさ（黒〜グレー）</label>
+  <div class="slider-row">
+    <input type="range" id="s-lvl" min="0" max="100" step="1" value="12">
+    <span class="val" id="v-lvl">12</span>
+  </div>
+  <div class="swatch" id="swatch"></div>
 
   <label class="f">文字サイズ倍率</label>
   <div class="slider-row">
@@ -152,7 +170,6 @@ const gojuonMap = {
   'ま':'まみむめも','や':'やゆよゃゅょ','ら':'らりるれろ','わ':'わをんゐゑ'
 };
 
-// タブ
 document.querySelectorAll('.tab').forEach(t => {
   t.onclick = () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
@@ -163,11 +180,12 @@ document.querySelectorAll('.tab').forEach(t => {
   };
 });
 
-// WebSocket
+function send(obj){ if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
+
 function connect() {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(proto + '//' + location.host);
-  ws.onopen = () => { ws.send(JSON.stringify({type:'init', clientType:'dock'})); $('status').textContent = '✓ 接続完了'; };
+  ws.onopen = () => { send({type:'init', clientType:'dock'}); $('status').textContent = '✓ 接続完了'; };
   ws.onmessage = e => {
     const m = JSON.parse(e.data);
     if (m.type === 'ack' && m.settings) applySettingsUI(m.settings);
@@ -187,7 +205,6 @@ async function load() {
   } catch { $('status').textContent = '✗ データ取得失敗'; }
 }
 
-// 50音
 function renderGojuon() {
   $('gojuon').innerHTML = '';
   gojuonChars.forEach(c => {
@@ -215,9 +232,7 @@ $('search').oninput = e => {
 };
 
 function avatarHtml(s) {
-  return s.photoUrl
-    ? `<img class="av" src="${s.photoUrl}" alt="">`
-    : `<div class="av no">📷</div>`;
+  return s.photoUrl ? `<img class="av" src="${s.photoUrl}" alt="">` : `<div class="av no">📷</div>`;
 }
 
 function render() {
@@ -230,15 +245,18 @@ function render() {
     d.onclick = () => {
       document.querySelectorAll('#list .item').forEach(x => x.classList.remove('sel'));
       d.classList.add('sel');
-      if (ws && ws.readyState === 1) ws.send(JSON.stringify({type:'selectStreamer', streamerId:s.id}));
+      send({type:'selectStreamer', streamerId:s.id});
     };
     L.appendChild(d);
   });
 }
 
-$('hideBtn').onclick = () => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({type:'hideStreamer'})); };
+$('hideBtn').onclick = () => send({type:'hideStreamer'});
+$('sc-up').onclick     = () => send({type:'scroll', dir:'up'});
+$('sc-down').onclick   = () => send({type:'scroll', dir:'down'});
+$('sc-top').onclick    = () => send({type:'scroll', dir:'top'});
+$('sc-bottom').onclick = () => send({type:'scroll', dir:'bottom'});
 
-/* ===== 編集 ===== */
 function renderEditList() {
   const L = $('editList'); L.innerHTML = '';
   all.forEach(s => {
@@ -260,13 +278,12 @@ function loadToForm(s) {
   $('f-intro').value = s.intro || '';
   $('preview').src = s.photoUrl || '';
   renderSns(); renderSites(); renderEditList();
-  $('editStatus').textContent = `編集中: ${s.name}`;
+  $('editStatus').textContent = s.name ? `編集中: ${s.name}` : '新規作成';
 }
 
-$('newBtn').onclick = () => { loadToForm(blank()); $('editStatus').textContent = '新規作成'; };
+$('newBtn').onclick = () => { loadToForm(blank()); };
 $('pickBtn').onclick = () => renderEditList();
 
-// SNS
 function renderSns() {
   const W = $('snsWrap'); W.innerHTML = '';
   (editing.sns || []).forEach((x, i) => {
@@ -285,7 +302,6 @@ function renderSns() {
 }
 $('snsAdd').onclick = () => { if(!editing) editing = blank(); (editing.sns ||= []).push({platform:'',id:'',url:''}); renderSns(); };
 
-// 配信サイト
 function renderSites() {
   const W = $('siteWrap'); W.innerHTML = '';
   (editing.sites || []).forEach((x, i) => {
@@ -303,7 +319,6 @@ function renderSites() {
 }
 $('siteAdd').onclick = () => { if(!editing) editing = blank(); (editing.sites ||= []).push({name:'',id:''}); renderSites(); };
 
-// 画像取り込み（base64・リサイズ256px）
 $('imgBtn').onclick = () => $('imgFile').click();
 $('imgFile').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
@@ -331,7 +346,6 @@ $('imgFile').onchange = e => {
 $('imgClear').onclick = () => { if(!editing) return; editing.photoUrl = ''; $('preview').src=''; $('f-photo').value=''; };
 $('f-photo').oninput = e => { if(!editing) editing = blank(); editing.photoUrl = e.target.value; $('preview').src = e.target.value; };
 
-// 保存
 $('saveBtn').onclick = async () => {
   if (!editing) { $('editStatus').textContent = '編集対象がありません'; return; }
   editing.name = $('f-name').value.trim();
@@ -353,8 +367,7 @@ $('delBtn').onclick = async () => {
   if (!editing || !editing.id) return;
   if (!confirm(`${editing.name} を削除しますか？`)) return;
   all = all.filter(s => s.id !== editing.id);
-  editing = blank();
-  loadToForm(editing);
+  loadToForm(blank());
   await push();
 };
 
@@ -364,7 +377,7 @@ async function push() {
       method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(all)
     });
     const j = await r.json();
-    $('editStatus').textContent = j.ok ? `保存しました（${j.count}件）` : '保存失敗（再デプロイでリセットされます）';
+    $('editStatus').textContent = j.ok ? `保存しました（${j.count}件）` : '保存失敗';
     filtered = all; render(); renderEditList();
   } catch (err) {
     $('editStatus').textContent = '保存エラー: ' + err.message;
@@ -379,28 +392,45 @@ $('exportBtn').onclick = () => {
   a.click();
 };
 
-/* ===== 設定 ===== */
+function bgRGB(level){
+  const t = Math.max(0, Math.min(100, level)) / 100;
+  return [Math.round(12 + t*52), Math.round(14 + t*54), Math.round(18 + t*60)];
+}
+
 function sendSettings() {
   const st = {
     width: +$('s-width').value,
-    bgOpacity: +$('s-bg').value,
+    bgOpacity: +$('s-bg').value / 100,
+    bgLevel: +$('s-lvl').value,
     fontScale: +$('s-font').value
   };
   $('v-width').textContent = st.width + 'px';
-  $('v-bg').textContent = st.bgOpacity.toFixed(2);
+  $('v-bg').textContent = $('s-bg').value + '%';
+  $('v-lvl').textContent = st.bgLevel;
   $('v-font').textContent = st.fontScale.toFixed(2) + 'x';
-  if (ws && ws.readyState === 1) ws.send(JSON.stringify({type:'updateSettings', settings:st}));
+  const [r,g,b] = bgRGB(st.bgLevel);
+  $('swatch').style.background = `rgba(${r},${g},${b},${st.bgOpacity})`;
+  send({type:'updateSettings', settings:st});
 }
+
 function applySettingsUI(st) {
   if (!st) return;
-  $('s-width').value = st.width; $('s-bg').value = st.bgOpacity; $('s-font').value = st.fontScale;
+  $('s-width').value = st.width;
+  $('s-bg').value = Math.round((st.bgOpacity ?? 0.85) * 100);
+  $('s-lvl').value = st.bgLevel ?? 12;
+  $('s-font').value = st.fontScale ?? 1;
   $('v-width').textContent = st.width + 'px';
-  $('v-bg').textContent = (+st.bgOpacity).toFixed(2);
-  $('v-font').textContent = (+st.fontScale).toFixed(2) + 'x';
+  $('v-bg').textContent = $('s-bg').value + '%';
+  $('v-lvl').textContent = $('s-lvl').value;
+  $('v-font').textContent = (+$('s-font').value).toFixed(2) + 'x';
+  const [r,g,b] = bgRGB(+$('s-lvl').value);
+  $('swatch').style.background = `rgba(${r},${g},${b},${+$('s-bg').value/100})`;
 }
-['s-width','s-bg','s-font'].forEach(id => $(id).oninput = sendSettings);
 
-connect(); load(); renderGojuon(); editing = blank();
+['s-width','s-bg','s-lvl','s-font'].forEach(id => $(id).oninput = sendSettings);
+
+editing = blank();
+connect(); load(); renderGojuon(); sendSettings();
 </script>
 </body>
 </html>
