@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streamer Dictionary Dock</title>
+  <style>
+    :root {
+      --bg: #04060d;
+      --panel: #0c1830;
+      --panel-2: #12233f;
+      --line: #2a4468;
+      --cyan: #12f5ff;
+      --magenta: #ff2fb0;
+      --green: #39ff9d;
+      --text: #fff;
+      --text-dim: #cfe0f5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 12px;
+      font-size: 14px;
+    }
+
+    .dock-header {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 8px;
+    }
+
+    .search-box {
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: var(--green);
+    }
+
+    .gojuon-index {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .gojuon-btn {
+      flex: 0 1 auto;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: 0.15s;
+    }
+
+    .gojuon-btn:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .gojuon-btn.active {
+      background: var(--cyan);
+      color: #001217;
+      border-color: var(--cyan);
+    }
+
+    .streamer-list {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+    }
+
+    .streamer-item {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .streamer-item:last-child {
+      border-bottom: none;
+    }
+
+    .streamer-item:hover {
+      background: var(--panel);
+      border-left: 3px solid var(--green);
+      padding-left: 7px;
+    }
+
+    .streamer-item.active {
+      background: rgba(18, 245, 255, 0.15);
+      border-left: 3px solid var(--green);
+      padding-left: 7px;
+    }
+
+    .streamer-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    .streamer-avatar.noimg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--panel);
+      color: var(--text-dim);
+      font-size: 18px;
+    }
+
+    .streamer-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .streamer-name {
+      font-weight: 700;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .streamer-yomi {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .status {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      padding: 8px;
+      border-top: 1px solid var(--line);
+      text-align: center;
+    }
+
+    .hide-btn {
+      width: 100%;
+      margin-top: 8px;
+      background: var(--panel);
+      border: 1px solid var(--magenta);
+      color: var(--magenta);
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: 0.15s;
+    }
+
+    .hide-btn:hover {
+      background: var(--magenta);
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="dock-header">配信者図鑑</div>
+
+  <input type="text" class="search-box" id="searchBox" placeholder="配信者名で検索...">
+
+  <div class="gojuon-index" id="gojuonIndex"></div>
+
+  <div class="streamer-list" id="streamerList"></div>
+
+  <div class="status" id="status">接続中...</div>
+  <button class="hide-btn" id="hideBtn">オーバーレイを非表示</button>
+
+  <script>
+    const searchBox = document.getElementById('searchBox');
+    const gojuonIndex = document.getElementById('gojuonIndex');
+    const streamerList = document.getElementById('streamerList');
+    const status = document.getElementById('status');
+    const hideBtn = document.getElementById('hideBtn');
+
+    let allStreamers = [];
+    let filteredStreamers = [];
+    let currentFilter = null;
+    let ws = null;
+
+    const gojuon = ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'];
+
+    // WebSocket接続
+    function connectWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${protocol}//${window.location.host}`);
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'init', clientType: 'dock' }));
+        status.textContent = '✓ 接続完了';
+      };
+
+      ws.onmessage = (event) => {
+        // ドックはmessageを受け取らない（表示側から）
+      };
+
+      ws.onclose = () => {
+        status.textContent = '✗ 接続切断';
+        setTimeout(connectWebSocket, 3000);
+      };
+
+      ws.onerror = () => {
+        status.textContent = '✗ エラー';
+      };
+    }
+
+    // データ取得
+    async function loadStreamers() {
+      try {
+        const res = await fetch('/api/streamers');
+        allStreamers = await res.json();
+        filteredStreamers = allStreamers;
+        renderStreamerList();
+      } catch (err) {
+        status.textContent = '✗ データ取得失敗';
+      }
+    }
+
+    // 50音インデックス作成
+    function renderGojuonIndex() {
+      gojuonIndex.innerHTML = '';
+      gojuon.forEach(char => {
+        const btn = document.createElement('button');
+        btn.className = 'gojuon-btn';
+        btn.textContent = char;
+        btn.addEventListener('click', () => filterByGojuon(char, btn));
+        gojuonIndex.appendChild(btn);
+      });
+    }
+
+    // 50音フィルタ
+    function filterByGojuon(char, btn) {
+      document.querySelectorAll('.gojuon-btn').forEach(b => b.classList.remove('active'));
+
+      if (currentFilter === char) {
+        currentFilter = null;
+        filteredStreamers = allStreamers;
+      } else {
+        currentFilter = char;
+        btn.classList.add('active');
+        filteredStreamers = allStreamers.filter(s => {
+          const yomi = s.yomi || '';
+          return yomi.startsWith(char);
+        });
+      }
+
+      searchBox.value = '';
+      renderStreamerList();
+    }
+
+    // 検索フィルタ
+    searchBox.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      document.querySelectorAll('.gojuon-btn').forEach(b => b.classList.remove('active'));
+      currentFilter = null;
+
+      if (query.length === 0) {
+        filteredStreamers = allStreamers;
+      } else {
+        filteredStreamers = allStreamers.filter(s =>
+          s.name.toLowerCase().includes(query) ||
+          (s.yomi && s.yomi.toLowerCase().includes(query))
+        );
+      }
+
+      renderStreamerList();
+    });
+
+    // 配信者リスト描画
+    function renderStreamerList() {
+      streamerList.innerHTML = '';
+
+      if (filteredStreamers.length === 0) {
+        const empty = document.createElement('div');
+        empty.style.padding = '20px';
+        empty.style.textAlign = 'center';
+        empty.style.color = 'var(--text-dim)';
+        empty.textContent = 'No results';
+        streamerList.appendChild(empty);
+        return;
+      }
+
+      filteredStreamers.forEach(streamer => {
+        const item = document.createElement('div');
+        item.className = 'streamer-item';
+
+        let avatar = '';
+        if (streamer.photoUrl) {
+          avatar = `<img class="streamer-avatar" src="${streamer.photoUrl}" alt="${streamer.name}">`;
+        } else {
+          avatar = `<div class="streamer-avatar noimg">📷</div>`;
+        }
+
+        item.innerHTML = `
+          ${avatar}
+          <div class="streamer-info">
+            <div class="streamer-name">${streamer.name}</div>
+            <div class="streamer-yomi">${streamer.yomi || ''}</div>
+          </div>
+        `;
+
+        item.addEventListener('click', () => selectStreamer(streamer));
+        streamerList.appendChild(item);
+      });
+    }
+
+    // 配信者選択
+    function selectStreamer(streamer) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'selectStreamer',
+          streamerId: streamer.id
+        }));
+      }
+    }
+
+    // オーバーレイ非表示
+    hideBtn.addEventListener('click', () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'hideStreamer' }));
+      }
+    });
+
+    // 初期化
+    connectWebSocket();
+    loadStreamers();
+    renderGojuonIndex();
+  </script>
+</body>
+</html>

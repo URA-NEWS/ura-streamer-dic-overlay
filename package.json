@@ -1,0 +1,27 @@
+{
+  "name": "streamer-dic-overlay",
+  "version": "1.0.0",
+  "description": "Streamer Dictionary Overlay for OBS - WebSocket-based real-time display",
+  "main": "server.js",
+  "scripts": {
+    "start": "node streamer-dic-server.js",
+    "extract": "node extract_streamers.js",
+    "dev": "node streamer-dic-server.js"
+  },
+  "keywords": [
+    "obs",
+    "overlay",
+    "websocket",
+    "streamer",
+    "dictionary"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.14.2",
+    "jsdom": "^22.1.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

@@ -1,0 +1,51 @@
+[
+  {
+    "id": "streamer_1",
+    "name": "例：配信者A",
+    "yomi": "はいしんしゃえー",
+    "photoUrl": "https://via.placeholder.com/150",
+    "sns": [
+      {
+        "platform": "X",
+        "id": "@streamer_a",
+        "url": "https://x.com/streamer_a"
+      },
+      {
+        "platform": "YouTube",
+        "id": "@streamer_a",
+        "url": "https://youtube.com/@streamer_a"
+      }
+    ],
+    "sites": [
+      {
+        "name": "ふわっち",
+        "id": "streamer_a"
+      },
+      {
+        "name": "Kick",
+        "id": "streamer_a"
+      }
+    ],
+    "intro": "配信者Aの紹介文です。楽しい配信をしています。"
+  },
+  {
+    "id": "streamer_2",
+    "name": "例：配信者B",
+    "yomi": "はいしんしゃびー",
+    "photoUrl": "https://via.placeholder.com/150",
+    "sns": [
+      {
+        "platform": "X",
+        "id": "@streamer_b",
+        "url": "https://x.com/streamer_b"
+      }
+    ],
+    "sites": [
+      {
+        "name": "ツイキャス",
+        "id": "streamer_b_twitcas"
+      }
+    ],
+    "intro": "配信者Bです。毎日配信中！"
+  }
+]
