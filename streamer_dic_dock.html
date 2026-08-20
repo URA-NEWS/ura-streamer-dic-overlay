@@ -1,360 +1,406 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Streamer Dictionary Dock</title>
-  <style>
-    :root {
-      --bg: #04060d;
-      --panel: #0c1830;
-      --panel-2: #12233f;
-      --line: #2a4468;
-      --cyan: #12f5ff;
-      --magenta: #ff2fb0;
-      --green: #39ff9d;
-      --text: #fff;
-      --text-dim: #cfe0f5;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
-      padding: 12px;
-      font-size: 14px;
-    }
-
-    .dock-header {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--cyan);
-      margin-bottom: 12px;
-      border-bottom: 1px solid var(--line);
-      padding-bottom: 8px;
-    }
-
-    .search-box {
-      width: 100%;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 8px 12px;
-      color: var(--text);
-      font-size: 13px;
-      margin-bottom: 12px;
-    }
-
-    .search-box:focus {
-      outline: none;
-      border-color: var(--green);
-    }
-
-    .gojuon-index {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
-
-    .gojuon-btn {
-      flex: 0 1 auto;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 6px 10px;
-      color: var(--text-dim);
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      transition: 0.15s;
-    }
-
-    .gojuon-btn:hover {
-      border-color: var(--cyan);
-      color: var(--cyan);
-    }
-
-    .gojuon-btn.active {
-      background: var(--cyan);
-      color: #001217;
-      border-color: var(--cyan);
-    }
-
-    .streamer-list {
-      max-height: 400px;
-      overflow-y: auto;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel-2);
-    }
-
-    .streamer-item {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      padding: 10px;
-      border-bottom: 1px solid var(--line);
-      cursor: pointer;
-      transition: 0.15s;
-    }
-
-    .streamer-item:last-child {
-      border-bottom: none;
-    }
-
-    .streamer-item:hover {
-      background: var(--panel);
-      border-left: 3px solid var(--green);
-      padding-left: 7px;
-    }
-
-    .streamer-item.active {
-      background: rgba(18, 245, 255, 0.15);
-      border-left: 3px solid var(--green);
-      padding-left: 7px;
-    }
-
-    .streamer-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 1px solid var(--line);
-      flex-shrink: 0;
-    }
-
-    .streamer-avatar.noimg {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--panel);
-      color: var(--text-dim);
-      font-size: 18px;
-    }
-
-    .streamer-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .streamer-name {
-      font-weight: 700;
-      color: var(--text);
-      font-size: 13px;
-    }
-
-    .streamer-yomi {
-      font-size: 11px;
-      color: var(--text-dim);
-    }
-
-    .status {
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-top: 8px;
-      padding: 8px;
-      border-top: 1px solid var(--line);
-      text-align: center;
-    }
-
-    .hide-btn {
-      width: 100%;
-      margin-top: 8px;
-      background: var(--panel);
-      border: 1px solid var(--magenta);
-      color: var(--magenta);
-      padding: 8px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      transition: 0.15s;
-    }
-
-    .hide-btn:hover {
-      background: var(--magenta);
-      color: #000;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>配信者図鑑 Dock</title>
+<style>
+:root{
+  --bg:#04060d; --panel:#0c1830; --panel-2:#12233f; --line:#2a4468;
+  --cyan:#12f5ff; --magenta:#ff2fb0; --green:#39ff9d; --text:#fff; --dim:#cfe0f5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;padding:10px;font-size:14px}
+.tabs{display:flex;gap:6px;margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.tab{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:8px;color:var(--dim);cursor:pointer;font-weight:700;font-size:13px}
+.tab.active{background:var(--cyan);color:#001217;border-color:var(--cyan)}
+.pane{display:none}
+.pane.active{display:block}
+h3{font-size:13px;color:var(--green);margin:12px 0 6px;letter-spacing:.05em}
+input[type=text],input[type=number],textarea,select{
+  width:100%;background:var(--panel);border:1px solid var(--line);border-radius:6px;
+  padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit
+}
+input:focus,textarea:focus{outline:none;border-color:var(--green)}
+textarea{min-height:70px;resize:vertical}
+.gojuon{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}
+.gbtn{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:var(--dim);cursor:pointer;font-size:12px;font-weight:700}
+.gbtn.active{background:var(--cyan);color:#001217}
+.list{max-height:280px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
+.item{display:flex;gap:10px;align-items:center;padding:9px;border-bottom:1px solid var(--line);cursor:pointer}
+.item:last-child{border-bottom:none}
+.item:hover{background:var(--panel)}
+.item.sel{background:rgba(18,245,255,.15);border-left:3px solid var(--green)}
+.av{width:34px;height:34px;border-radius:50%;object-fit:cover;border:1px solid var(--line);flex-shrink:0;background:var(--panel)}
+.av.no{display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--dim)}
+.nm{font-weight:700;font-size:13px}
+.ym{font-size:11px;color:var(--dim)}
+.row{display:flex;gap:6px;margin-top:8px}
+button.act{flex:1;background:var(--panel);border:1px solid var(--cyan);color:var(--cyan);padding:9px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700}
+button.act:hover{background:var(--cyan);color:#001217}
+button.warn{border-color:var(--magenta);color:var(--magenta)}
+button.warn:hover{background:var(--magenta);color:#000}
+button.ok{border-color:var(--green);color:var(--green)}
+button.ok:hover{background:var(--green);color:#001217}
+.status{font-size:11px;color:var(--dim);margin-top:8px;padding:6px;text-align:center;border-top:1px solid var(--line)}
+.sub{border:1px solid var(--line);border-radius:6px;padding:8px;margin-bottom:6px;background:var(--panel)}
+.sub .row{margin-top:4px}
+.sub input{margin-bottom:4px}
+.mini{background:none;border:1px solid var(--magenta);color:var(--magenta);border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px}
+.preview{width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--green);display:block;margin:6px auto;background:var(--panel)}
+label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
+.slider-row{display:flex;align-items:center;gap:8px}
+.slider-row input[type=range]{flex:1}
+.val{min-width:52px;text-align:right;font-size:12px;color:var(--cyan)}
+</style>
 </head>
 <body>
-  <div class="dock-header">配信者図鑑</div>
 
-  <input type="text" class="search-box" id="searchBox" placeholder="配信者名で検索...">
+<div class="tabs">
+  <button class="tab active" data-pane="p-show">表示</button>
+  <button class="tab" data-pane="p-edit">編集</button>
+  <button class="tab" data-pane="p-set">設定</button>
+</div>
 
-  <div class="gojuon-index" id="gojuonIndex"></div>
-
-  <div class="streamer-list" id="streamerList"></div>
-
+<!-- 表示タブ -->
+<div class="pane active" id="p-show">
+  <input type="text" id="search" placeholder="配信者名で検索...">
+  <div class="gojuon" id="gojuon"></div>
+  <div class="list" id="list"></div>
+  <div class="row">
+    <button class="act warn" id="hideBtn">オーバーレイを非表示</button>
+  </div>
   <div class="status" id="status">接続中...</div>
-  <button class="hide-btn" id="hideBtn">オーバーレイを非表示</button>
+</div>
 
-  <script>
-    const searchBox = document.getElementById('searchBox');
-    const gojuonIndex = document.getElementById('gojuonIndex');
-    const streamerList = document.getElementById('streamerList');
-    const status = document.getElementById('status');
-    const hideBtn = document.getElementById('hideBtn');
+<!-- 編集タブ -->
+<div class="pane" id="p-edit">
+  <div class="row">
+    <button class="act ok" id="newBtn">＋新規</button>
+    <button class="act" id="pickBtn">既存を選択</button>
+  </div>
 
-    let allStreamers = [];
-    let filteredStreamers = [];
-    let currentFilter = null;
-    let ws = null;
+  <div class="list" id="editList" style="max-height:150px;margin-top:8px"></div>
 
-    const gojuon = ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'];
+  <label class="f">アイコン画像</label>
+  <img class="preview" id="preview" src="" alt="">
+  <div class="row">
+    <button class="act" id="imgBtn">画像を選択</button>
+    <button class="act warn" id="imgClear">画像を削除</button>
+  </div>
+  <input type="file" id="imgFile" accept="image/*" style="display:none">
+  <label class="f">または画像URL</label>
+  <input type="text" id="f-photo" placeholder="https://...">
 
-    // WebSocket接続
-    function connectWebSocket() {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      ws = new WebSocket(`${protocol}//${window.location.host}`);
+  <label class="f">配信者名 *</label>
+  <input type="text" id="f-name" placeholder="例：=eru">
 
-      ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'init', clientType: 'dock' }));
-        status.textContent = '✓ 接続完了';
-      };
+  <label class="f">読み仮名（ひらがな・50音索引用）</label>
+  <input type="text" id="f-yomi" placeholder="いこえる">
 
-      ws.onmessage = (event) => {
-        // ドックはmessageを受け取らない（表示側から）
-      };
+  <h3>SNS</h3>
+  <div id="snsWrap"></div>
+  <button class="act" id="snsAdd">＋SNS追加</button>
 
-      ws.onclose = () => {
-        status.textContent = '✗ 接続切断';
-        setTimeout(connectWebSocket, 3000);
-      };
+  <h3>配信サイト</h3>
+  <div id="siteWrap"></div>
+  <button class="act" id="siteAdd">＋配信サイト追加</button>
 
-      ws.onerror = () => {
-        status.textContent = '✗ エラー';
-      };
-    }
+  <label class="f">紹介文</label>
+  <textarea id="f-intro" placeholder="紹介文..."></textarea>
 
-    // データ取得
-    async function loadStreamers() {
-      try {
-        const res = await fetch('/api/streamers');
-        allStreamers = await res.json();
-        filteredStreamers = allStreamers;
-        renderStreamerList();
-      } catch (err) {
-        status.textContent = '✗ データ取得失敗';
+  <div class="row">
+    <button class="act ok" id="saveBtn">保存</button>
+    <button class="act warn" id="delBtn">この配信者を削除</button>
+  </div>
+  <div class="row">
+    <button class="act" id="exportBtn">streamers.json をダウンロード</button>
+  </div>
+  <div class="status" id="editStatus">&nbsp;</div>
+</div>
+
+<!-- 設定タブ -->
+<div class="pane" id="p-set">
+  <label class="f">オーバーレイ横幅</label>
+  <div class="slider-row">
+    <input type="range" id="s-width" min="300" max="1280" step="10" value="640">
+    <span class="val" id="v-width">640px</span>
+  </div>
+
+  <label class="f">背景の不透明度（0＝完全透過 / 1＝黒ベタ）</label>
+  <div class="slider-row">
+    <input type="range" id="s-bg" min="0" max="1" step="0.05" value="1">
+    <span class="val" id="v-bg">1.00</span>
+  </div>
+
+  <label class="f">文字サイズ倍率</label>
+  <div class="slider-row">
+    <input type="range" id="s-font" min="0.8" max="2" step="0.05" value="1">
+    <span class="val" id="v-font">1.00x</span>
+  </div>
+
+  <div class="status">変更は即座にオーバーレイへ反映されます</div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let all = [], filtered = [], ws = null, editing = null, gFilter = null;
+const gojuonChars = ['あ','か','さ','た','な','は','ま','や','ら','わ'];
+const gojuonMap = {
+  'あ':'あいうえおぁぃぅぇぉ','か':'かきくけこがぎぐげご','さ':'さしすせそざじずぜぞ',
+  'た':'たちつてとだぢづでどっ','な':'なにぬねの','は':'はひふへほばびぶべぼぱぴぷぺぽ',
+  'ま':'まみむめも','や':'やゆよゃゅょ','ら':'らりるれろ','わ':'わをんゐゑ'
+};
+
+// タブ
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.pane').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    $(t.dataset.pane).classList.add('active');
+    if (t.dataset.pane === 'p-edit') renderEditList();
+  };
+});
+
+// WebSocket
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(proto + '//' + location.host);
+  ws.onopen = () => { ws.send(JSON.stringify({type:'init', clientType:'dock'})); $('status').textContent = '✓ 接続完了'; };
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.type === 'ack' && m.settings) applySettingsUI(m.settings);
+    if (m.type === 'dataUpdated') load();
+  };
+  ws.onclose = () => { $('status').textContent = '✗ 切断（再接続中）'; setTimeout(connect, 3000); };
+  ws.onerror = () => { $('status').textContent = '✗ エラー'; };
+}
+
+async function load() {
+  try {
+    const r = await fetch('/api/streamers');
+    all = await r.json();
+    filtered = all;
+    render();
+    renderEditList();
+  } catch { $('status').textContent = '✗ データ取得失敗'; }
+}
+
+// 50音
+function renderGojuon() {
+  $('gojuon').innerHTML = '';
+  gojuonChars.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'gbtn'; b.textContent = c;
+    b.onclick = () => {
+      document.querySelectorAll('.gbtn').forEach(x => x.classList.remove('active'));
+      if (gFilter === c) { gFilter = null; filtered = all; }
+      else { gFilter = c; b.classList.add('active');
+        filtered = all.filter(s => (gojuonMap[c] || '').includes((s.yomi||'').charAt(0)));
       }
-    }
+      $('search').value = '';
+      render();
+    };
+    $('gojuon').appendChild(b);
+  });
+}
 
-    // 50音インデックス作成
-    function renderGojuonIndex() {
-      gojuonIndex.innerHTML = '';
-      gojuon.forEach(char => {
-        const btn = document.createElement('button');
-        btn.className = 'gojuon-btn';
-        btn.textContent = char;
-        btn.addEventListener('click', () => filterByGojuon(char, btn));
-        gojuonIndex.appendChild(btn);
-      });
-    }
+$('search').oninput = e => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.gbtn').forEach(x => x.classList.remove('active'));
+  gFilter = null;
+  filtered = q ? all.filter(s => s.name.toLowerCase().includes(q) || (s.yomi||'').toLowerCase().includes(q)) : all;
+  render();
+};
 
-    // 50音フィルタ
-    function filterByGojuon(char, btn) {
-      document.querySelectorAll('.gojuon-btn').forEach(b => b.classList.remove('active'));
+function avatarHtml(s) {
+  return s.photoUrl
+    ? `<img class="av" src="${s.photoUrl}" alt="">`
+    : `<div class="av no">📷</div>`;
+}
 
-      if (currentFilter === char) {
-        currentFilter = null;
-        filteredStreamers = allStreamers;
-      } else {
-        currentFilter = char;
-        btn.classList.add('active');
-        filteredStreamers = allStreamers.filter(s => {
-          const yomi = s.yomi || '';
-          return yomi.startsWith(char);
-        });
-      }
+function render() {
+  const L = $('list'); L.innerHTML = '';
+  if (!filtered.length) { L.innerHTML = '<div style="padding:18px;text-align:center;color:var(--dim)">該当なし</div>'; return; }
+  filtered.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'item';
+    d.innerHTML = avatarHtml(s) + `<div><div class="nm">${s.name}</div><div class="ym">${s.yomi||''}</div></div>`;
+    d.onclick = () => {
+      document.querySelectorAll('#list .item').forEach(x => x.classList.remove('sel'));
+      d.classList.add('sel');
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({type:'selectStreamer', streamerId:s.id}));
+    };
+    L.appendChild(d);
+  });
+}
 
-      searchBox.value = '';
-      renderStreamerList();
-    }
+$('hideBtn').onclick = () => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({type:'hideStreamer'})); };
 
-    // 検索フィルタ
-    searchBox.addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase();
-      document.querySelectorAll('.gojuon-btn').forEach(b => b.classList.remove('active'));
-      currentFilter = null;
+/* ===== 編集 ===== */
+function renderEditList() {
+  const L = $('editList'); L.innerHTML = '';
+  all.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'item' + (editing && editing.id === s.id ? ' sel' : '');
+    d.innerHTML = avatarHtml(s) + `<div><div class="nm">${s.name}</div><div class="ym">${s.yomi||''}</div></div>`;
+    d.onclick = () => loadToForm(s);
+    L.appendChild(d);
+  });
+}
 
-      if (query.length === 0) {
-        filteredStreamers = allStreamers;
-      } else {
-        filteredStreamers = allStreamers.filter(s =>
-          s.name.toLowerCase().includes(query) ||
-          (s.yomi && s.yomi.toLowerCase().includes(query))
-        );
-      }
+function blank() { return { id:'', name:'', yomi:'', photoUrl:'', sns:[], sites:[], intro:'' }; }
 
-      renderStreamerList();
+function loadToForm(s) {
+  editing = JSON.parse(JSON.stringify(s));
+  $('f-name').value = s.name || '';
+  $('f-yomi').value = s.yomi || '';
+  $('f-photo').value = (s.photoUrl && s.photoUrl.startsWith('data:')) ? '' : (s.photoUrl || '');
+  $('f-intro').value = s.intro || '';
+  $('preview').src = s.photoUrl || '';
+  renderSns(); renderSites(); renderEditList();
+  $('editStatus').textContent = `編集中: ${s.name}`;
+}
+
+$('newBtn').onclick = () => { loadToForm(blank()); $('editStatus').textContent = '新規作成'; };
+$('pickBtn').onclick = () => renderEditList();
+
+// SNS
+function renderSns() {
+  const W = $('snsWrap'); W.innerHTML = '';
+  (editing.sns || []).forEach((x, i) => {
+    const d = document.createElement('div'); d.className = 'sub';
+    d.innerHTML = `
+      <input type="text" placeholder="プラットフォーム（X / YouTube等）" value="${x.platform||''}" data-k="platform" data-i="${i}">
+      <input type="text" placeholder="ID（@name）" value="${x.id||''}" data-k="id" data-i="${i}">
+      <input type="text" placeholder="URL" value="${x.url||''}" data-k="url" data-i="${i}">
+      <button class="mini" data-del="${i}">削除</button>`;
+    d.querySelectorAll('input').forEach(inp => {
+      inp.oninput = e => { editing.sns[e.target.dataset.i][e.target.dataset.k] = e.target.value; };
     });
+    d.querySelector('[data-del]').onclick = () => { editing.sns.splice(i,1); renderSns(); };
+    W.appendChild(d);
+  });
+}
+$('snsAdd').onclick = () => { if(!editing) editing = blank(); (editing.sns ||= []).push({platform:'',id:'',url:''}); renderSns(); };
 
-    // 配信者リスト描画
-    function renderStreamerList() {
-      streamerList.innerHTML = '';
-
-      if (filteredStreamers.length === 0) {
-        const empty = document.createElement('div');
-        empty.style.padding = '20px';
-        empty.style.textAlign = 'center';
-        empty.style.color = 'var(--text-dim)';
-        empty.textContent = 'No results';
-        streamerList.appendChild(empty);
-        return;
-      }
-
-      filteredStreamers.forEach(streamer => {
-        const item = document.createElement('div');
-        item.className = 'streamer-item';
-
-        let avatar = '';
-        if (streamer.photoUrl) {
-          avatar = `<img class="streamer-avatar" src="${streamer.photoUrl}" alt="${streamer.name}">`;
-        } else {
-          avatar = `<div class="streamer-avatar noimg">📷</div>`;
-        }
-
-        item.innerHTML = `
-          ${avatar}
-          <div class="streamer-info">
-            <div class="streamer-name">${streamer.name}</div>
-            <div class="streamer-yomi">${streamer.yomi || ''}</div>
-          </div>
-        `;
-
-        item.addEventListener('click', () => selectStreamer(streamer));
-        streamerList.appendChild(item);
-      });
-    }
-
-    // 配信者選択
-    function selectStreamer(streamer) {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'selectStreamer',
-          streamerId: streamer.id
-        }));
-      }
-    }
-
-    // オーバーレイ非表示
-    hideBtn.addEventListener('click', () => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'hideStreamer' }));
-      }
+// 配信サイト
+function renderSites() {
+  const W = $('siteWrap'); W.innerHTML = '';
+  (editing.sites || []).forEach((x, i) => {
+    const d = document.createElement('div'); d.className = 'sub';
+    d.innerHTML = `
+      <input type="text" placeholder="サイト名（ふわっち / Kick / ツイキャス）" value="${x.name||''}" data-k="name" data-i="${i}">
+      <input type="text" placeholder="ID" value="${x.id||''}" data-k="id" data-i="${i}">
+      <button class="mini" data-del="${i}">削除</button>`;
+    d.querySelectorAll('input').forEach(inp => {
+      inp.oninput = e => { editing.sites[e.target.dataset.i][e.target.dataset.k] = e.target.value; };
     });
+    d.querySelector('[data-del]').onclick = () => { editing.sites.splice(i,1); renderSites(); };
+    W.appendChild(d);
+  });
+}
+$('siteAdd').onclick = () => { if(!editing) editing = blank(); (editing.sites ||= []).push({name:'',id:''}); renderSites(); };
 
-    // 初期化
-    connectWebSocket();
-    loadStreamers();
-    renderGojuonIndex();
-  </script>
+// 画像取り込み（base64・リサイズ256px）
+$('imgBtn').onclick = () => $('imgFile').click();
+$('imgFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const S = 256, cv = document.createElement('canvas');
+      cv.width = S; cv.height = S;
+      const ctx = cv.getContext('2d');
+      const side = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width-side)/2, (img.height-side)/2, side, side, 0, 0, S, S);
+      const data = cv.toDataURL('image/jpeg', 0.85);
+      if (!editing) editing = blank();
+      editing.photoUrl = data;
+      $('preview').src = data;
+      $('f-photo').value = '';
+      $('editStatus').textContent = '画像を取り込みました（保存を押してください）';
+    };
+    img.src = ev.target.result;
+  };
+  rd.readAsDataURL(f);
+  e.target.value = '';
+};
+$('imgClear').onclick = () => { if(!editing) return; editing.photoUrl = ''; $('preview').src=''; $('f-photo').value=''; };
+$('f-photo').oninput = e => { if(!editing) editing = blank(); editing.photoUrl = e.target.value; $('preview').src = e.target.value; };
+
+// 保存
+$('saveBtn').onclick = async () => {
+  if (!editing) { $('editStatus').textContent = '編集対象がありません'; return; }
+  editing.name = $('f-name').value.trim();
+  editing.yomi = $('f-yomi').value.trim();
+  editing.intro = $('f-intro').value;
+  if (!editing.name) { $('editStatus').textContent = '配信者名は必須です'; return; }
+
+  if (!editing.id) {
+    editing.id = 'streamer_' + Date.now();
+    all.push(editing);
+  } else {
+    const i = all.findIndex(s => s.id === editing.id);
+    if (i >= 0) all[i] = editing; else all.push(editing);
+  }
+  await push();
+};
+
+$('delBtn').onclick = async () => {
+  if (!editing || !editing.id) return;
+  if (!confirm(`${editing.name} を削除しますか？`)) return;
+  all = all.filter(s => s.id !== editing.id);
+  editing = blank();
+  loadToForm(editing);
+  await push();
+};
+
+async function push() {
+  try {
+    const r = await fetch('/api/streamers', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(all)
+    });
+    const j = await r.json();
+    $('editStatus').textContent = j.ok ? `保存しました（${j.count}件）` : '保存失敗（再デプロイでリセットされます）';
+    filtered = all; render(); renderEditList();
+  } catch (err) {
+    $('editStatus').textContent = '保存エラー: ' + err.message;
+  }
+}
+
+$('exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify(all, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'streamers.json';
+  a.click();
+};
+
+/* ===== 設定 ===== */
+function sendSettings() {
+  const st = {
+    width: +$('s-width').value,
+    bgOpacity: +$('s-bg').value,
+    fontScale: +$('s-font').value
+  };
+  $('v-width').textContent = st.width + 'px';
+  $('v-bg').textContent = st.bgOpacity.toFixed(2);
+  $('v-font').textContent = st.fontScale.toFixed(2) + 'x';
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify({type:'updateSettings', settings:st}));
+}
+function applySettingsUI(st) {
+  if (!st) return;
+  $('s-width').value = st.width; $('s-bg').value = st.bgOpacity; $('s-font').value = st.fontScale;
+  $('v-width').textContent = st.width + 'px';
+  $('v-bg').textContent = (+st.bgOpacity).toFixed(2);
+  $('v-font').textContent = (+st.fontScale).toFixed(2) + 'x';
+}
+['s-width','s-bg','s-font'].forEach(id => $(id).oninput = sendSettings);
+
+connect(); load(); renderGojuon(); editing = blank();
+</script>
 </body>
 </html>
