@@ -1,364 +1,121 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Streamer Dictionary Overlay</title>
-  <style>
-    :root {
-      --bg: #04060d;
-      --panel: #0c1830;
-      --panel-2: #12233f;
-      --line: #2a4468;
-      --cyan: #12f5ff;
-      --cyan-soft: #7cfbff;
-      --magenta: #ff2fb0;
-      --green: #39ff9d;
-      --text: #fff;
-      --text-dim: #cfe0f5;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      width: 1280px;
-      height: 720px;
-      background: transparent;
-      overflow: hidden;
-      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
-    .overlay-container {
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 640px;
-      height: 720px;
-      background: linear-gradient(90deg, rgba(4, 6, 13, 0) 0%, var(--panel) 15%, var(--panel-2) 100%);
-      border-left: 2px solid var(--line);
-      transform: translateX(640px);
-      transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
-      display: flex;
-      flex-direction: column;
-      z-index: 9999;
-    }
-
-    .overlay-container.visible {
-      transform: translateX(0);
-    }
-
-    .overlay-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .overlay-header h2 {
-      font-size: 16px;
-      color: var(--cyan);
-      font-weight: 700;
-      letter-spacing: 0.05em;
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      font-size: 20px;
-      cursor: pointer;
-      transition: 0.15s;
-    }
-
-    .close-btn:hover {
-      color: var(--magenta);
-    }
-
-    .overlay-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-    }
-
-    .streamer-card {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .streamer-photo-section {
-      display: flex;
-      justify-content: center;
-    }
-
-    .streamer-photo {
-      width: 140px;
-      height: 140px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid var(--green);
-      box-shadow: 0 0 20px rgba(57, 255, 157, 0.3);
-    }
-
-    .streamer-photo.noimg {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--panel);
-      color: var(--text-dim);
-      font-size: 60px;
-    }
-
-    .streamer-name {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--text);
-      text-align: center;
-      line-height: 1.2;
-    }
-
-    .streamer-yomi {
-      font-size: 13px;
-      color: var(--text-dim);
-      text-align: center;
-      font-family: 'Space Mono', monospace;
-    }
-
-    .streamer-section {
-      border-top: 1px dashed var(--line);
-      padding-top: 12px;
-    }
-
-    .section-label {
-      font-size: 12px;
-      color: var(--green);
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-    }
-
-    .sns-links {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .sns-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 6px 12px;
-      color: var(--text-dim);
-      font-size: 12px;
-      text-decoration: none;
-      transition: 0.15s;
-      cursor: pointer;
-    }
-
-    .sns-link:hover {
-      border-color: var(--cyan);
-      color: var(--cyan-soft);
-    }
-
-    .sites-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      font-size: 13px;
-    }
-
-    .site-item {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      color: var(--text-dim);
-    }
-
-    .site-name {
-      font-weight: 600;
-      color: var(--text);
-      min-width: 70px;
-    }
-
-    .site-id {
-      color: var(--cyan-soft);
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-    }
-
-    .intro-text {
-      font-size: 13px;
-      color: var(--text-dim);
-      line-height: 1.6;
-    }
-
-    /* スクロールバースタイル */
-    .overlay-body::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .overlay-body::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .overlay-body::-webkit-scrollbar-thumb {
-      background: var(--line);
-      border-radius: 3px;
-    }
-
-    .overlay-body::-webkit-scrollbar-thumb:hover {
-      background: var(--cyan);
-    }
-  </style>
+<meta charset="UTF-8">
+<title>配信者図鑑 Overlay</title>
+<style>
+:root{
+  --panel:#000; --line:#2a4468; --cyan:#12f5ff; --cyan-soft:#7cfbff;
+  --green:#39ff9d; --text:#fff; --dim:#cfe0f5;
+  --w:640px; --bgop:1; --fs:1;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1280px;height:720px;background:transparent;overflow:hidden;
+  font-family:'Noto Sans JP',sans-serif}
+.wrap{
+  position:fixed;top:0;right:0;width:var(--w);height:720px;
+  background:rgba(0,0,0,var(--bgop));
+  border-left:2px solid var(--line);
+  transform:translateX(100%);
+  transition:transform .4s cubic-bezier(.4,0,.2,1), width .2s ease;
+  display:flex;flex-direction:column;z-index:9999
+}
+.wrap.on{transform:translateX(0)}
+.hd{padding:16px 22px;border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.hd h2{font-size:calc(20px * var(--fs));color:var(--cyan);font-weight:700;letter-spacing:.06em}
+.bd{flex:1;overflow-y:auto;padding:22px}
+.photo-wrap{display:flex;justify-content:center;margin-bottom:14px}
+.photo{width:calc(160px * var(--fs));height:calc(160px * var(--fs));border-radius:50%;
+  object-fit:cover;border:3px solid var(--green);box-shadow:0 0 24px rgba(57,255,157,.35);background:#0c1830}
+.photo.no{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:calc(64px * var(--fs))}
+.name{font-size:calc(38px * var(--fs));font-weight:700;text-align:center;line-height:1.2}
+.yomi{font-size:calc(18px * var(--fs));color:var(--dim);text-align:center;margin-top:4px}
+.sec{border-top:1px dashed var(--line);padding-top:14px;margin-top:16px}
+.lbl{font-size:calc(15px * var(--fs));color:var(--green);font-weight:700;letter-spacing:.1em;margin-bottom:10px}
+.sns{display:flex;gap:8px;flex-wrap:wrap}
+.sns a{display:inline-flex;align-items:center;gap:8px;background:rgba(12,24,48,.8);
+  border:1px solid var(--line);border-radius:8px;padding:8px 14px;
+  color:var(--dim);font-size:calc(18px * var(--fs));text-decoration:none}
+.sites{display:flex;flex-direction:column;gap:10px}
+.site{display:flex;gap:12px;align-items:center;font-size:calc(20px * var(--fs))}
+.site b{color:var(--text);min-width:calc(110px * var(--fs))}
+.site span{color:var(--cyan-soft)}
+.intro{font-size:calc(20px * var(--fs));color:var(--dim);line-height:1.7}
+.bd::-webkit-scrollbar{width:6px}
+.bd::-webkit-scrollbar-track{background:transparent}
+.bd::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+</style>
 </head>
 <body>
-  <div class="overlay-container" id="overlayContainer">
-    <div class="overlay-header">
-      <h2>配信者情報</h2>
-      <button class="close-btn" id="closeBtn">✕</button>
-    </div>
-    <div class="overlay-body" id="overlayBody">
-      <!-- 動的に配信者情報が挿入される -->
-    </div>
-  </div>
+<div class="wrap" id="wrap">
+  <div class="hd"><h2>配信者情報</h2></div>
+  <div class="bd" id="bd"></div>
+</div>
 
-  <script>
-    const overlayContainer = document.getElementById('overlayContainer');
-    const overlayBody = document.getElementById('overlayBody');
-    const closeBtn = document.getElementById('closeBtn');
+<script>
+const wrap = document.getElementById('wrap');
+const bd = document.getElementById('bd');
+let ws = null;
 
-    let ws = null;
+function connect(){
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(proto + '//' + location.host);
+  ws.onopen = () => ws.send(JSON.stringify({type:'init', clientType:'overlay'}));
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.type === 'ack' && m.settings) applySettings(m.settings);
+    if (m.type === 'settings') applySettings(m.settings);
+    if (m.type === 'showStreamer') show(m.streamer);
+    if (m.type === 'hideOverlay') wrap.classList.remove('on');
+  };
+  ws.onclose = () => setTimeout(connect, 3000);
+}
 
-    // WebSocket接続
-    function connectWebSocket() {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      ws = new WebSocket(`${protocol}//${window.location.host}`);
+function applySettings(st){
+  if (!st) return;
+  const r = document.documentElement.style;
+  if (st.width != null) r.setProperty('--w', st.width + 'px');
+  if (st.bgOpacity != null) r.setProperty('--bgop', st.bgOpacity);
+  if (st.fontScale != null) r.setProperty('--fs', st.fontScale);
+}
 
-      ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'init', clientType: 'overlay' }));
-      };
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-      ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
+function show(s){
+  let h = '';
+  h += '<div class="photo-wrap">' + (s.photoUrl
+    ? `<img class="photo" src="${esc(s.photoUrl)}" alt="">`
+    : `<div class="photo no">📷</div>`) + '</div>';
+  h += `<div class="name">${esc(s.name)}</div>`;
+  if (s.yomi) h += `<div class="yomi">${esc(s.yomi)}</div>`;
 
-        if (msg.type === 'showStreamer') {
-          displayStreamer(msg.streamer);
-        } else if (msg.type === 'hideOverlay') {
-          hideOverlay();
-        }
-      };
+  if (s.sns && s.sns.length){
+    h += '<div class="sec"><div class="lbl">SNS</div><div class="sns">';
+    s.sns.forEach(x => {
+      h += `<a href="${esc(x.url)}" target="_blank" rel="noopener"><span>${esc(x.platform)}</span><span>${esc(x.id)}</span></a>`;
+    });
+    h += '</div></div>';
+  }
 
-      ws.onclose = () => {
-        setTimeout(connectWebSocket, 3000);
-      };
-    }
+  if (s.sites && s.sites.length){
+    h += '<div class="sec"><div class="lbl">配信サイト</div><div class="sites">';
+    s.sites.forEach(x => {
+      h += `<div class="site"><b>${esc(x.name)}</b><span>${esc(x.id)}</span></div>`;
+    });
+    h += '</div></div>';
+  }
 
-    // 配信者情報表示
-    function displayStreamer(streamer) {
-      overlayBody.innerHTML = '';
+  if (s.intro){
+    h += `<div class="sec"><div class="lbl">紹介</div><div class="intro">${esc(s.intro)}</div></div>`;
+  }
 
-      // 写真
-      const photoSection = document.createElement('div');
-      photoSection.className = 'streamer-photo-section';
-      if (streamer.photoUrl) {
-        const photo = document.createElement('img');
-        photo.className = 'streamer-photo';
-        photo.src = streamer.photoUrl;
-        photo.alt = streamer.name;
-        photoSection.appendChild(photo);
-      } else {
-        const photo = document.createElement('div');
-        photo.className = 'streamer-photo noimg';
-        photo.textContent = '📷';
-        photoSection.appendChild(photo);
-      }
-      overlayBody.appendChild(photoSection);
+  bd.innerHTML = h;
+  bd.scrollTop = 0;
+  wrap.classList.add('on');
+}
 
-      // 名前
-      const nameEl = document.createElement('div');
-      nameEl.className = 'streamer-name';
-      nameEl.textContent = streamer.name;
-      overlayBody.appendChild(nameEl);
-
-      // 読み仮名
-      if (streamer.yomi) {
-        const yomiEl = document.createElement('div');
-        yomiEl.className = 'streamer-yomi';
-        yomiEl.textContent = streamer.yomi;
-        overlayBody.appendChild(yomiEl);
-      }
-
-      // SNS
-      if (streamer.sns && streamer.sns.length > 0) {
-        const snsSection = document.createElement('div');
-        snsSection.className = 'streamer-section';
-        snsSection.innerHTML = '<div class="section-label">SNS</div>';
-        const snsLinks = document.createElement('div');
-        snsLinks.className = 'sns-links';
-        streamer.sns.forEach(link => {
-          const a = document.createElement('a');
-          a.className = 'sns-link';
-          a.href = link.url;
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          a.innerHTML = `<span>${link.platform}</span><span>${link.id}</span>`;
-          snsLinks.appendChild(a);
-        });
-        snsSection.appendChild(snsLinks);
-        overlayBody.appendChild(snsSection);
-      }
-
-      // 配信サイト
-      if (streamer.sites && streamer.sites.length > 0) {
-        const sitesSection = document.createElement('div');
-        sitesSection.className = 'streamer-section';
-        sitesSection.innerHTML = '<div class="section-label">配信サイト</div>';
-        const sitesList = document.createElement('div');
-        sitesList.className = 'sites-list';
-        streamer.sites.forEach(site => {
-          const item = document.createElement('div');
-          item.className = 'site-item';
-          item.innerHTML = `<span class="site-name">${site.name}</span><span class="site-id">${site.id}</span>`;
-          sitesList.appendChild(item);
-        });
-        sitesSection.appendChild(sitesList);
-        overlayBody.appendChild(sitesSection);
-      }
-
-      // 紹介文
-      if (streamer.intro) {
-        const introSection = document.createElement('div');
-        introSection.className = 'streamer-section';
-        introSection.innerHTML = '<div class="section-label">紹介</div>';
-        const introText = document.createElement('div');
-        introText.className = 'intro-text';
-        introText.textContent = streamer.intro;
-        introSection.appendChild(introText);
-        overlayBody.appendChild(introSection);
-      }
-
-      // スライドイン
-      overlayContainer.classList.add('visible');
-    }
-
-    // オーバーレイ非表示
-    function hideOverlay() {
-      overlayContainer.classList.remove('visible');
-    }
-
-    closeBtn.addEventListener('click', hideOverlay);
-
-    // 初期化
-    connectWebSocket();
-  </script>
+connect();
+</script>
 </body>
 </html>
