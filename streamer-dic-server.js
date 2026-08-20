@@ -5,7 +5,7 @@ const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
 let streamersData = [];
-let overlaySettings = { width: 640, bgOpacity: 0.85, bgLevel: 12, fontScale: 1 };
+let overlaySettings = { width: 640, bgOpacity: 0.88, bgLevel: 12, fontScale: 1 };
 let connectedClients = { dock: new Set(), overlay: new Set() };
 
 const streamersJsonPath = path.join(__dirname, 'streamers.json');
@@ -39,7 +39,7 @@ function readBody(req) {
     let body = '';
     req.on('data', chunk => {
       body += chunk;
-      if (body.length > 30 * 1024 * 1024) { req.destroy(); reject(new Error('too large')); }
+      if (body.length > 50 * 1024 * 1024) { req.destroy(); reject(new Error('too large')); }
     });
     req.on('end', () => resolve(body));
     req.on('error', reject);
@@ -140,7 +140,6 @@ wss.on('connection', (ws) => {
           connectedClients.overlay.forEach(c => {
             if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'showStreamer', streamer: s }));
           });
-          console.log(`-> ${s.name} to ${connectedClients.overlay.size} overlay(s)`);
         }
         return;
       }
@@ -152,10 +151,25 @@ wss.on('connection', (ws) => {
         return;
       }
 
-      // スクロール操作
       if (msg.type === 'scroll') {
         connectedClients.overlay.forEach(c => {
           if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'scroll', dir: msg.dir }));
+        });
+        return;
+      }
+
+      // 動画再生
+      if (msg.type === 'playVideo') {
+        connectedClients.overlay.forEach(c => {
+          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'playVideo', url: msg.url, title: msg.title }));
+        });
+        return;
+      }
+
+      // 動画停止
+      if (msg.type === 'stopVideo') {
+        connectedClients.overlay.forEach(c => {
+          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'stopVideo' }));
         });
         return;
       }
@@ -184,6 +198,4 @@ console.log(`cwd: ${__dirname}`);
 loadStreamersData();
 server.listen(PORT, () => {
   console.log(`Streamer Dictionary Overlay Server / Port: ${PORT}`);
-  console.log(`Dock:    /dock`);
-  console.log(`Overlay: /overlay`);
 });
