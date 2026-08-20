@@ -34,13 +34,13 @@ html,body{width:1280px;height:720px;background:transparent;overflow:hidden;
 .name{font-size:calc(46px * var(--fs));font-weight:900;text-align:center;line-height:1.15;
   color:var(--gold);
   text-shadow:0 3px 10px rgba(0,0,0,1), 0 0 18px rgba(255,180,40,.45), 0 0 3px rgba(0,0,0,1)}
-.yomi{font-size:calc(22px * var(--fs));color:var(--dim);text-align:center;margin-top:6px}
+.yomi{font-size:calc(22px * var(--fs));color:var(--dim);text-align:center;margin-top:6px;letter-spacing:.08em}
 .sec{border-top:2px solid var(--line);padding-top:16px;margin-top:20px}
 .lbl{font-size:calc(17px * var(--fs));color:var(--green);font-weight:700;letter-spacing:.12em;margin-bottom:12px}
 .info{display:flex;flex-direction:column;gap:11px}
 .info-row{display:flex;gap:14px;align-items:flex-start;font-size:calc(23px * var(--fs))}
 .info-row b{color:var(--cyan-soft);min-width:calc(140px * var(--fs));font-weight:700;flex-shrink:0}
-.info-row span{color:#fff;font-weight:500}
+.info-row span{color:#fff;font-weight:500;white-space:pre-wrap;word-break:break-word}
 .sns{display:flex;gap:10px;flex-wrap:wrap}
 .sns a{display:inline-flex;align-items:center;gap:10px;
   background:rgba(0,0,0,.45);
@@ -52,10 +52,12 @@ html,body{width:1280px;height:720px;background:transparent;overflow:hidden;
 .site span{color:var(--cyan-soft);font-weight:700}
 .videos{display:flex;flex-direction:column;gap:12px}
 .video-item{padding-left:16px;border-left:4px solid var(--gold)}
-.video-title{font-size:calc(23px * var(--fs));color:#fff;font-weight:600;line-height:1.4}
+.video-title{font-size:calc(23px * var(--fs));color:#fff;font-weight:600;line-height:1.4;
+  white-space:pre-wrap;word-break:break-word}
 .video-url{font-size:calc(17px * var(--fs));color:var(--cyan-soft);font-weight:600;
   margin-top:4px;word-break:break-all;line-height:1.4}
-.intro{font-size:calc(24px * var(--fs));color:#fff;line-height:1.75;font-weight:600}
+.intro{font-size:calc(24px * var(--fs));color:#fff;line-height:1.75;font-weight:600;
+  white-space:pre-wrap;word-break:break-word}
 .bd::-webkit-scrollbar{width:8px}
 .bd::-webkit-scrollbar-track{background:rgba(0,0,0,.3)}
 .bd::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
@@ -65,8 +67,8 @@ html,body{width:1280px;height:720px;background:transparent;overflow:hidden;
 .player.on{display:flex}
 .player-title{color:var(--gold);font-size:26px;font-weight:700;margin-bottom:16px;
   text-align:center;max-width:1100px;text-shadow:0 2px 8px rgba(0,0,0,1)}
-.player-stage{width:1120px;height:630px;background:#000;border-radius:8px;overflow:hidden}
-#ytPlayer,.player-frame{width:100%;height:100%;border:none;display:block}
+.player-stage{width:1120px;height:630px;background:#000;border-radius:8px;overflow:hidden;position:relative}
+.player-stage > *{width:100%;height:100%;border:none;display:block}
 </style>
 </head>
 <body>
@@ -77,24 +79,20 @@ html,body{width:1280px;height:720px;background:transparent;overflow:hidden;
 
 <div class="player" id="player">
   <div class="player-title" id="playerTitle"></div>
-  <div class="player-stage">
-    <div id="ytPlayer" style="display:none"></div>
-    <iframe class="player-frame" id="playerFrame" allow="autoplay; encrypted-media" allowfullscreen style="display:none"></iframe>
-  </div>
+  <div class="player-stage" id="stage"></div>
 </div>
 
 <script>
 const wrap = document.getElementById('wrap');
 const bd = document.getElementById('bd');
 const player = document.getElementById('player');
-const playerFrame = document.getElementById('playerFrame');
 const playerTitle = document.getElementById('playerTitle');
-const ytDiv = document.getElementById('ytPlayer');
+const stage = document.getElementById('stage');
 let ws = null;
 let cur = { width:640, bgOpacity:0.88, bgLevel:12, fontScale:1, volume:60 };
-let ytPlayer = null, ytReady = false, pendingVideoId = null;
+let ytApiReady = false, ytPlayer = null, pending = null;
 
-// YouTube IFrame API 読み込み
+// YouTube IFrame API
 (function(){
   const tag = document.createElement('script');
   tag.src = 'https://www.youtube.com/iframe_api';
@@ -102,28 +100,31 @@ let ytPlayer = null, ytReady = false, pendingVideoId = null;
 })();
 
 window.onYouTubeIframeAPIReady = function(){
-  ytPlayer = new YT.Player('ytPlayer', {
-    height: '100%', width: '100%', videoId: '',
-    playerVars: { autoplay: 0, rel: 0, modestbranding: 1, playsinline: 1 },
+  ytApiReady = true;
+  if (pending){ const p = pending; pending = null; startYT(p.id, p.title); }
+};
+
+function clearStage(){
+  if (ytPlayer){ try { ytPlayer.destroy(); } catch {} ytPlayer = null; }
+  stage.innerHTML = '';
+}
+
+function startYT(videoId, title){
+  if (!ytApiReady){ pending = { id: videoId, title }; return; }
+  clearStage();
+  const host = document.createElement('div');
+  host.id = 'ytHost_' + Date.now();
+  stage.appendChild(host);
+  ytPlayer = new YT.Player(host.id, {
+    height: '630', width: '1120', videoId: videoId,
+    playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1, enablejsapi: 1,
+                  origin: location.origin },
     events: {
-      onReady: () => {
-        ytReady = true;
-        try { ytPlayer.setVolume(cur.volume); } catch {}
-        if (pendingVideoId){ const v = pendingVideoId; pendingVideoId = null; loadYT(v); }
+      onReady: e => {
+        try { e.target.setVolume(cur.volume); e.target.playVideo(); } catch {}
       }
     }
   });
-};
-
-function loadYT(videoId){
-  if (!ytReady){ pendingVideoId = videoId; return; }
-  ytDiv.style.display = 'block';
-  playerFrame.style.display = 'none';
-  try {
-    ytPlayer.loadVideoById(videoId);
-    ytPlayer.setVolume(cur.volume);
-    ytPlayer.playVideo();
-  } catch {}
 }
 
 function connect(){
@@ -146,7 +147,7 @@ function connect(){
 
 function setVolume(v){
   cur.volume = v;
-  if (ytPlayer && ytReady){ try { ytPlayer.setVolume(v); } catch {} }
+  if (ytPlayer && ytPlayer.setVolume){ try { ytPlayer.setVolume(v); } catch {} }
 }
 
 function isX(u){
@@ -191,24 +192,24 @@ function otherEmbed(u){
 function playVideo(u, title){
   if (!u || isX(u)) return;
   playerTitle.textContent = title || '';
+  player.classList.add('on');
 
   const vid = ytVideoId(u);
   if (vid){
-    loadYT(vid);
+    startYT(vid, title);
   } else {
-    ytDiv.style.display = 'none';
-    if (ytPlayer && ytReady){ try { ytPlayer.stopVideo(); } catch {} }
-    playerFrame.src = otherEmbed(u);
-    playerFrame.style.display = 'block';
+    clearStage();
+    const f = document.createElement('iframe');
+    f.setAttribute('allow', 'autoplay; encrypted-media');
+    f.setAttribute('allowfullscreen', '');
+    f.src = otherEmbed(u);
+    stage.appendChild(f);
   }
-  player.classList.add('on');
 }
 
 function stopVideo(){
-  if (ytPlayer && ytReady){ try { ytPlayer.stopVideo(); } catch {} }
-  ytDiv.style.display = 'none';
-  playerFrame.src = '';
-  playerFrame.style.display = 'none';
+  pending = null;
+  clearStage();
   player.classList.remove('on');
 }
 
