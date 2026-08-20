@@ -5,51 +5,51 @@
 <title>配信者図鑑 Overlay</title>
 <style>
 :root{
-  --line:#2a4468; --cyan:#12f5ff; --cyan-soft:#7cfbff;
-  --green:#39ff9d; --text:#fff; --dim:#cfe0f5;
-  --w:640px; --bgop:0.85; --fs:1;
-  --bg-r:18; --bg-g:20; --bg-b:26;
+  --line:#3a5c88; --cyan:#12f5ff; --cyan-soft:#7cfbff;
+  --green:#39ff9d; --gold:#ffd24a; --text:#fff; --dim:#dbe8f8;
+  --w:640px; --fs:1;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:1280px;height:720px;background:transparent;overflow:hidden;
   font-family:'Noto Sans JP',sans-serif}
 .wrap{
   position:fixed;top:0;right:0;width:var(--w);height:720px;
-  background:rgba(var(--bg-r),var(--bg-g),var(--bg-b),var(--bgop));
-  border-left:2px solid var(--line);
+  background:rgba(18,20,26,0.88);
+  border-left:3px solid var(--line);
   transform:translateX(100%);
-  transition:transform .4s cubic-bezier(.4,0,.2,1), width .2s ease, background-color .15s linear;
+  transition:transform .4s cubic-bezier(.4,0,.2,1), width .2s ease, background-color .12s linear;
   display:flex;flex-direction:column;z-index:9999
 }
 .wrap.on{transform:translateX(0)}
-.hd{padding:16px 22px;border-bottom:1px solid var(--line);
+.hd{padding:16px 24px;border-bottom:3px solid var(--line);
   display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
-.hd h2{font-size:calc(20px * var(--fs));color:var(--cyan);font-weight:700;letter-spacing:.06em;
-  text-shadow:0 2px 6px rgba(0,0,0,.9)}
-.bd{flex:1;overflow-y:auto;padding:22px;scroll-behavior:smooth}
-.bd, .bd *{text-shadow:0 2px 6px rgba(0,0,0,.9)}
-.photo-wrap{display:flex;justify-content:center;margin-bottom:14px}
-.photo{width:calc(160px * var(--fs));height:calc(160px * var(--fs));border-radius:50%;
-  object-fit:cover;border:3px solid var(--green);box-shadow:0 0 24px rgba(57,255,157,.35);
-  background:rgba(12,24,48,.6)}
-.photo.no{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:calc(64px * var(--fs))}
-.name{font-size:calc(38px * var(--fs));font-weight:700;text-align:center;line-height:1.2}
-.yomi{font-size:calc(18px * var(--fs));color:var(--dim);text-align:center;margin-top:4px}
-.sec{border-top:1px dashed var(--line);padding-top:14px;margin-top:16px}
-.lbl{font-size:calc(15px * var(--fs));color:var(--green);font-weight:700;letter-spacing:.1em;margin-bottom:10px}
-.sns{display:flex;gap:8px;flex-wrap:wrap}
-.sns a{display:inline-flex;align-items:center;gap:8px;
-  background:rgba(var(--bg-r),var(--bg-g),var(--bg-b),.75);
-  border:1px solid var(--line);border-radius:8px;padding:8px 14px;
-  color:var(--dim);font-size:calc(18px * var(--fs));text-decoration:none}
-.sites{display:flex;flex-direction:column;gap:10px}
-.site{display:flex;gap:12px;align-items:center;font-size:calc(20px * var(--fs))}
-.site b{color:var(--text);min-width:calc(110px * var(--fs))}
-.site span{color:var(--cyan-soft)}
-.intro{font-size:calc(20px * var(--fs));color:var(--dim);line-height:1.7}
-.bd::-webkit-scrollbar{width:6px}
-.bd::-webkit-scrollbar-track{background:transparent}
-.bd::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.hd h2{font-size:calc(22px * var(--fs));color:var(--cyan);font-weight:700;letter-spacing:.08em}
+.bd{flex:1;overflow-y:auto;padding:24px;scroll-behavior:smooth}
+.bd, .hd{text-shadow:0 2px 8px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.9)}
+.photo-wrap{display:flex;justify-content:center;margin-bottom:16px}
+.photo{width:calc(170px * var(--fs));height:calc(170px * var(--fs));border-radius:50%;
+  object-fit:cover;border:4px solid var(--green);box-shadow:0 0 28px rgba(57,255,157,.4);
+  background:rgba(12,24,48,.7)}
+.photo.no{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:calc(70px * var(--fs))}
+.name{font-size:calc(46px * var(--fs));font-weight:900;text-align:center;line-height:1.15;
+  color:var(--gold);
+  text-shadow:0 3px 10px rgba(0,0,0,1), 0 0 18px rgba(255,180,40,.45), 0 0 3px rgba(0,0,0,1)}
+.yomi{font-size:calc(22px * var(--fs));color:var(--dim);text-align:center;margin-top:6px}
+.sec{border-top:2px solid var(--line);padding-top:16px;margin-top:20px}
+.lbl{font-size:calc(17px * var(--fs));color:var(--green);font-weight:700;letter-spacing:.12em;margin-bottom:12px}
+.sns{display:flex;gap:10px;flex-wrap:wrap}
+.sns a{display:inline-flex;align-items:center;gap:10px;
+  background:rgba(0,0,0,.45);
+  border:2px solid var(--line);border-radius:10px;padding:10px 16px;
+  color:var(--cyan-soft);font-size:calc(21px * var(--fs));text-decoration:none;font-weight:700}
+.sites{display:flex;flex-direction:column;gap:12px}
+.site{display:flex;gap:14px;align-items:center;font-size:calc(24px * var(--fs))}
+.site b{color:var(--text);min-width:calc(120px * var(--fs));font-weight:700}
+.site span{color:var(--cyan-soft);font-weight:700}
+.intro{font-size:calc(24px * var(--fs));color:#fff;line-height:1.75}
+.bd::-webkit-scrollbar{width:8px}
+.bd::-webkit-scrollbar-track{background:rgba(0,0,0,.3)}
+.bd::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
 </style>
 </head>
 <body>
@@ -62,6 +62,7 @@ html,body{width:1280px;height:720px;background:transparent;overflow:hidden;
 const wrap = document.getElementById('wrap');
 const bd = document.getElementById('bd');
 let ws = null;
+let cur = { width:640, bgOpacity:0.88, bgLevel:12, fontScale:1 };
 
 function connect(){
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -88,16 +89,22 @@ function doScroll(dir){
 
 function applySettings(st){
   if (!st) return;
+  cur = Object.assign(cur, st);
   const r = document.documentElement.style;
-  if (st.width != null) r.setProperty('--w', st.width + 'px');
-  if (st.bgOpacity != null) r.setProperty('--bgop', st.bgOpacity);
-  if (st.fontScale != null) r.setProperty('--fs', st.fontScale);
-  if (st.bgLevel != null){
-    const t = Math.max(0, Math.min(100, st.bgLevel)) / 100;
-    r.setProperty('--bg-r', Math.round(12 + t * 52));
-    r.setProperty('--bg-g', Math.round(14 + t * 54));
-    r.setProperty('--bg-b', Math.round(18 + t * 60));
-  }
+  r.setProperty('--w', cur.width + 'px');
+  r.setProperty('--fs', cur.fontScale);
+
+  // 明るさ 0=rgb(10,12,16) 〜 100=rgb(72,76,86)
+  const t = Math.max(0, Math.min(100, cur.bgLevel)) / 100;
+  const R = Math.round(10 + t * 62);
+  const G = Math.round(12 + t * 64);
+  const B = Math.round(16 + t * 70);
+
+  // 体感に合わせたガンマ補正（50%→約0.73）
+  const raw = Math.max(0, Math.min(1, cur.bgOpacity));
+  const a = Math.pow(raw, 0.45);
+
+  wrap.style.backgroundColor = `rgba(${R},${G},${B},${a.toFixed(3)})`;
 }
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -135,6 +142,7 @@ function show(s){
   wrap.classList.add('on');
 }
 
+applySettings(cur);
 connect();
 </script>
 </body>
