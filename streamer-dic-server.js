@@ -5,116 +5,120 @@ const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
 let streamersData = [];
-let connectedClients = {
-  dock: new Set(),
-  overlay: new Set()
-};
+let overlaySettings = { width: 640, bgOpacity: 1, fontScale: 1 };
+let connectedClients = { dock: new Set(), overlay: new Set() };
 
-// JSONファイルパス
 const streamersJsonPath = path.join(__dirname, 'streamers.json');
 
-// 起動時にstreamers.jsonを読み込み
 function loadStreamersData() {
   try {
     if (fs.existsSync(streamersJsonPath)) {
-      const data = fs.readFileSync(streamersJsonPath, 'utf-8');
-      streamersData = JSON.parse(data);
-      console.log(`✓ Loaded ${streamersData.length} streamers from streamers.json`);
+      streamersData = JSON.parse(fs.readFileSync(streamersJsonPath, 'utf-8'));
+      console.log(`Loaded ${streamersData.length} streamers`);
     } else {
-      console.warn('⚠ streamers.json not found. Create one or run extract_streamers.js');
       streamersData = [];
     }
   } catch (err) {
-    console.error('✗ Failed to load streamers.json:', err.message);
+    console.error('Failed to load streamers.json:', err.message);
     streamersData = [];
   }
 }
 
-// HTTPサーバー
-const server = http.createServer((req, res) => {
-  // CORS設定
+function saveStreamersData() {
+  try {
+    fs.writeFileSync(streamersJsonPath, JSON.stringify(streamersData, null, 2), 'utf-8');
+    return true;
+  } catch (err) {
+    console.error('Save failed:', err.message);
+    return false;
+  }
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+      if (body.length > 30 * 1024 * 1024) { req.destroy(); reject(new Error('too large')); }
+    });
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
+function serveFile(res, fileName) {
+  const filePath = path.join(__dirname, fileName);
+  try {
+    if (!fs.existsSync(filePath)) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end(`File not found: ${fileName}`);
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(fs.readFileSync(filePath, 'utf-8'));
+  } catch (err) {
+    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Error: ' + err.message);
+  }
+}
+
+const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
+  if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
 
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  const url = req.url.split('?')[0];
+  console.log(`[${new Date().toISOString()}] ${req.method} ${url}`);
 
-  // ドック UI
-  if (req.url === '/dock' && req.method === 'GET') {
-    const filePath = path.join(__dirname, 'streamer_dic_dock.html');
-    console.log(`Attempting to read dock file: ${filePath}`);
-    try {
-      if (!fs.existsSync(filePath)) {
-        console.error(`✗ Dock file not found: ${filePath}`);
-        console.log(`Files in ${__dirname}:`, fs.readdirSync(__dirname));
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end(`File not found: ${filePath}\nFiles: ${fs.readdirSync(__dirname).join(', ')}`);
-        return;
-      }
-      const content = fs.readFileSync(filePath, 'utf-8');
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(content);
-      console.log('✓ Dock file served successfully');
-    } catch (err) {
-      console.error('✗ Error reading dock file:', err.message);
-      res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end('Error: ' + err.message);
-    }
-    return;
-  }
+  if (url === '/dock' && req.method === 'GET') { serveFile(res, 'streamer_dic_dock.html'); return; }
+  if (url === '/overlay' && req.method === 'GET') { serveFile(res, 'streamer_dic_overlay.html'); return; }
 
-  // 表示UI
-  if (req.url === '/overlay' && req.method === 'GET') {
-    const filePath = path.join(__dirname, 'streamer_dic_overlay.html');
-    console.log(`Attempting to read overlay file: ${filePath}`);
-    try {
-      if (!fs.existsSync(filePath)) {
-        console.error(`✗ Overlay file not found: ${filePath}`);
-        console.log(`Files in ${__dirname}:`, fs.readdirSync(__dirname));
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end(`File not found: ${filePath}\nFiles: ${fs.readdirSync(__dirname).join(', ')}`);
-        return;
-      }
-      const content = fs.readFileSync(filePath, 'utf-8');
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(content);
-      console.log('✓ Overlay file served successfully');
-    } catch (err) {
-      console.error('✗ Error reading overlay file:', err.message);
-      res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end('Error: ' + err.message);
-    }
-    return;
-  }
-
-  // JSONエンドポイント（ドック/表示から直接GET）
-  if (req.url === '/api/streamers' && req.method === 'GET') {
+  if (url === '/api/streamers' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(streamersData));
-    console.log(`✓ API /streamers returned ${streamersData.length} items`);
     return;
   }
 
-  // データリロード（管理用）
-  if (req.url === '/api/reload' && req.method === 'POST') {
+  // 保存（追加/更新/削除まとめて）
+  if (url === '/api/streamers' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body);
+      if (!Array.isArray(data)) throw new Error('array required');
+      streamersData = data;
+      const ok = saveStreamersData();
+      // 全ドックに更新通知
+      connectedClients.dock.forEach(c => {
+        if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'dataUpdated' }));
+      });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok, count: streamersData.length }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  if (url === '/api/settings' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify(overlaySettings));
+    return;
+  }
+
+  if (url === '/api/reload' && req.method === 'POST') {
     loadStreamersData();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, count: streamersData.length }));
-    console.log('✓ Streamers data reloaded');
     return;
   }
 
-  res.writeHead(404);
+  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
   res.end('Not Found');
 });
 
-// WebSocketサーバー
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
@@ -124,75 +128,57 @@ wss.on('connection', (ws) => {
     try {
       const msg = JSON.parse(message);
 
-      // クライアント初期化メッセージ
       if (msg.type === 'init') {
-        clientType = msg.clientType; // 'dock' or 'overlay'
-        if (connectedClients[clientType]) {
-          connectedClients[clientType].add(ws);
-          console.log(`✓ ${clientType} connected. Total: dock=${connectedClients.dock.size}, overlay=${connectedClients.overlay.size}`);
-        }
-        ws.send(JSON.stringify({ type: 'ack', clientType }));
+        clientType = msg.clientType;
+        if (connectedClients[clientType]) connectedClients[clientType].add(ws);
+        ws.send(JSON.stringify({ type: 'ack', clientType, settings: overlaySettings }));
+        console.log(`${clientType} connected. dock=${connectedClients.dock.size} overlay=${connectedClients.overlay.size}`);
         return;
       }
 
-      // ドックから「配信者選択」メッセージ
       if (msg.type === 'selectStreamer') {
-        const selectedStreamer = streamersData.find(s => s.id === msg.streamerId);
-        if (selectedStreamer) {
-          // すべてのoverlayクライアントに配信
-          connectedClients.overlay.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
-              client.send(JSON.stringify({
-                type: 'showStreamer',
-                streamer: selectedStreamer
-              }));
-            }
+        const s = streamersData.find(x => x.id === msg.streamerId);
+        if (s) {
+          connectedClients.overlay.forEach(c => {
+            if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'showStreamer', streamer: s }));
           });
-          console.log(`→ Sent ${selectedStreamer.name} to ${connectedClients.overlay.size} overlay(s)`);
+          console.log(`-> ${s.name} to ${connectedClients.overlay.size} overlay(s)`);
         }
         return;
       }
 
-      // オーバーレイから「非表示」メッセージ
       if (msg.type === 'hideStreamer') {
-        connectedClients.overlay.forEach(client => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ type: 'hideOverlay' }));
-          }
+        connectedClients.overlay.forEach(c => {
+          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'hideOverlay' }));
+        });
+        return;
+      }
+
+      // 表示設定の変更（幅・背景透過・文字サイズ）
+      if (msg.type === 'updateSettings') {
+        overlaySettings = Object.assign(overlaySettings, msg.settings || {});
+        connectedClients.overlay.forEach(c => {
+          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'settings', settings: overlaySettings }));
         });
         return;
       }
 
     } catch (err) {
-      console.error('WebSocket message error:', err.message);
+      console.error('WS message error:', err.message);
     }
   });
 
   ws.on('close', () => {
-    if (clientType && connectedClients[clientType]) {
-      connectedClients[clientType].delete(ws);
-      console.log(`✗ ${clientType} disconnected. Total: dock=${connectedClients.dock.size}, overlay=${connectedClients.overlay.size}`);
-    }
+    if (clientType && connectedClients[clientType]) connectedClients[clientType].delete(ws);
   });
 
-  ws.on('error', (err) => {
-    console.error('WebSocket error:', err.message);
-  });
+  ws.on('error', (err) => console.error('WS error:', err.message));
 });
 
-// サーバー起動
-console.log(`Current working directory: ${__dirname}`);
-console.log(`Files available: ${fs.readdirSync(__dirname).join(', ')}`);
+console.log(`cwd: ${__dirname}`);
 loadStreamersData();
 server.listen(PORT, () => {
-  console.log(`
-╔════════════════════════════════════════╗
-║   Streamer Dictionary Overlay Server   ║
-╠════════════════════════════════════════╣
-║ Port: ${PORT}
-║ Dock:    http://localhost:${PORT}/dock
-║ Overlay: http://localhost:${PORT}/overlay
-║ API:     http://localhost:${PORT}/api/streamers
-╚════════════════════════════════════════╝
-  `);
+  console.log(`Streamer Dictionary Overlay Server / Port: ${PORT}`);
+  console.log(`Dock:    /dock`);
+  console.log(`Overlay: /overlay`);
 });
