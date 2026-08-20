@@ -109,6 +109,12 @@ function clearStage(){
   stage.innerHTML = '';
 }
 
+function killCaptions(p){
+  try { p.unloadModule('captions'); } catch {}
+  try { p.unloadModule('cc'); } catch {}
+  try { p.setOption('captions', 'track', {}); } catch {}
+}
+
 function startYT(videoId, title){
   if (!ytApiReady){ pending = { id: videoId, title }; return; }
   clearStage();
@@ -117,11 +123,23 @@ function startYT(videoId, title){
   stage.appendChild(host);
   ytPlayer = new YT.Player(host.id, {
     height: '630', width: '1120', videoId: videoId,
-    playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1, enablejsapi: 1,
-                  origin: location.origin },
+    playerVars: {
+      autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1, enablejsapi: 1,
+      cc_load_policy: 0, iv_load_policy: 3, hl: 'ja',
+      origin: location.origin
+    },
     events: {
       onReady: e => {
-        try { e.target.setVolume(cur.volume); e.target.playVideo(); } catch {}
+        try {
+          e.target.setVolume(cur.volume);
+          killCaptions(e.target);
+          e.target.playVideo();
+        } catch {}
+        setTimeout(() => killCaptions(e.target), 800);
+        setTimeout(() => killCaptions(e.target), 2500);
+      },
+      onStateChange: e => {
+        if (e.data === YT.PlayerState.PLAYING) killCaptions(e.target);
       }
     }
   });
