@@ -43,17 +43,53 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+
   // ドック UI
   if (req.url === '/dock' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(fs.readFileSync(path.join(__dirname, 'streamer_dic_dock.html'), 'utf-8'));
+    const filePath = path.join(__dirname, 'streamer_dic_dock.html');
+    console.log(`Attempting to read dock file: ${filePath}`);
+    try {
+      if (!fs.existsSync(filePath)) {
+        console.error(`✗ Dock file not found: ${filePath}`);
+        console.log(`Files in ${__dirname}:`, fs.readdirSync(__dirname));
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end(`File not found: ${filePath}\nFiles: ${fs.readdirSync(__dirname).join(', ')}`);
+        return;
+      }
+      const content = fs.readFileSync(filePath, 'utf-8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(content);
+      console.log('✓ Dock file served successfully');
+    } catch (err) {
+      console.error('✗ Error reading dock file:', err.message);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Error: ' + err.message);
+    }
     return;
   }
 
   // 表示UI
   if (req.url === '/overlay' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(fs.readFileSync(path.join(__dirname, 'streamer_dic_overlay.html'), 'utf-8'));
+    const filePath = path.join(__dirname, 'streamer_dic_overlay.html');
+    console.log(`Attempting to read overlay file: ${filePath}`);
+    try {
+      if (!fs.existsSync(filePath)) {
+        console.error(`✗ Overlay file not found: ${filePath}`);
+        console.log(`Files in ${__dirname}:`, fs.readdirSync(__dirname));
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end(`File not found: ${filePath}\nFiles: ${fs.readdirSync(__dirname).join(', ')}`);
+        return;
+      }
+      const content = fs.readFileSync(filePath, 'utf-8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(content);
+      console.log('✓ Overlay file served successfully');
+    } catch (err) {
+      console.error('✗ Error reading overlay file:', err.message);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Error: ' + err.message);
+    }
     return;
   }
 
@@ -61,6 +97,7 @@ const server = http.createServer((req, res) => {
   if (req.url === '/api/streamers' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(streamersData));
+    console.log(`✓ API /streamers returned ${streamersData.length} items`);
     return;
   }
 
@@ -69,6 +106,7 @@ const server = http.createServer((req, res) => {
     loadStreamersData();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, count: streamersData.length }));
+    console.log('✓ Streamers data reloaded');
     return;
   }
 
@@ -143,6 +181,8 @@ wss.on('connection', (ws) => {
 });
 
 // サーバー起動
+console.log(`Current working directory: ${__dirname}`);
+console.log(`Files available: ${fs.readdirSync(__dirname).join(', ')}`);
 loadStreamersData();
 server.listen(PORT, () => {
   console.log(`
