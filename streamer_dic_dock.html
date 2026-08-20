@@ -7,7 +7,8 @@
 <style>
 :root{
   --bg:#04060d; --panel:#0c1830; --panel-2:#12233f; --line:#2a4468;
-  --cyan:#12f5ff; --magenta:#ff2fb0; --green:#39ff9d; --text:#fff; --dim:#cfe0f5;
+  --cyan:#12f5ff; --magenta:#ff2fb0; --green:#39ff9d; --gold:#ffd24a;
+  --text:#fff; --dim:#cfe0f5;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;padding:10px;font-size:14px}
@@ -17,7 +18,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .pane{display:none}
 .pane.active{display:block}
 h3{font-size:13px;color:var(--green);margin:12px 0 6px;letter-spacing:.05em}
-input[type=text],input[type=number],textarea,select{
+input[type=text],textarea{
   width:100%;background:var(--panel);border:1px solid var(--line);border-radius:6px;
   padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit
 }
@@ -55,8 +56,15 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
 .slider-row{display:flex;align-items:center;gap:8px}
 .slider-row input[type=range]{flex:1}
 .val{min-width:56px;text-align:right;font-size:12px;color:var(--cyan)}
-.swatch{height:26px;border-radius:6px;border:1px solid var(--line);margin-top:6px}
+.swatch{height:44px;border-radius:6px;border:1px solid var(--line);margin-top:6px;
+  background-image:linear-gradient(45deg,#666 25%,transparent 25%),linear-gradient(-45deg,#666 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#666 75%),linear-gradient(-45deg,transparent 75%,#666 75%);
+  background-size:14px 14px;background-position:0 0,0 7px,7px -7px,-7px 0;position:relative;overflow:hidden}
+.swatch i{position:absolute;inset:0;display:block}
 .hint{font-size:11px;color:var(--dim);margin-top:3px}
+.presets{display:flex;gap:6px;margin-top:6px}
+.presets button{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--dim);
+  border-radius:6px;padding:6px;cursor:pointer;font-size:11px;font-weight:700}
+.presets button:hover{border-color:var(--gold);color:var(--gold)}
 </style>
 </head>
 <body>
@@ -137,23 +145,30 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
     <span class="val" id="v-width">640px</span>
   </div>
 
-  <label class="f">背景の不透明度</label>
+  <label class="f">背景の濃さ</label>
   <div class="slider-row">
-    <input type="range" id="s-bg" min="0" max="100" step="1" value="85">
-    <span class="val" id="v-bg">85%</span>
+    <input type="range" id="s-bg" min="0" max="100" step="1" value="88">
+    <span class="val" id="v-bg">88%</span>
   </div>
-  <div class="hint">0%＝完全透過 / 100%＝不透明</div>
+  <div class="hint">0%＝完全透過 / 100%＝不透明（体感に合わせ補正済み）</div>
+  <div class="presets">
+    <button data-bg="0">透明</button>
+    <button data-bg="25">薄い</button>
+    <button data-bg="50">標準</button>
+    <button data-bg="75">濃い</button>
+    <button data-bg="100">ベタ</button>
+  </div>
 
   <label class="f">背景の明るさ（黒〜グレー）</label>
   <div class="slider-row">
     <input type="range" id="s-lvl" min="0" max="100" step="1" value="12">
     <span class="val" id="v-lvl">12</span>
   </div>
-  <div class="swatch" id="swatch"></div>
+  <div class="swatch"><i id="swatch"></i></div>
 
   <label class="f">文字サイズ倍率</label>
   <div class="slider-row">
-    <input type="range" id="s-font" min="0.8" max="2" step="0.05" value="1">
+    <input type="range" id="s-font" min="0.7" max="2" step="0.05" value="1">
     <span class="val" id="v-font">1.00x</span>
   </div>
 
@@ -200,8 +215,7 @@ async function load() {
     const r = await fetch('/api/streamers');
     all = await r.json();
     filtered = all;
-    render();
-    renderEditList();
+    render(); renderEditList();
   } catch { $('status').textContent = '✗ データ取得失敗'; }
 }
 
@@ -251,11 +265,11 @@ function render() {
   });
 }
 
-$('hideBtn').onclick = () => send({type:'hideStreamer'});
-$('sc-up').onclick     = () => send({type:'scroll', dir:'up'});
-$('sc-down').onclick   = () => send({type:'scroll', dir:'down'});
-$('sc-top').onclick    = () => send({type:'scroll', dir:'top'});
-$('sc-bottom').onclick = () => send({type:'scroll', dir:'bottom'});
+$('hideBtn').onclick    = () => send({type:'hideStreamer'});
+$('sc-up').onclick      = () => send({type:'scroll', dir:'up'});
+$('sc-down').onclick    = () => send({type:'scroll', dir:'down'});
+$('sc-top').onclick     = () => send({type:'scroll', dir:'top'});
+$('sc-bottom').onclick  = () => send({type:'scroll', dir:'bottom'});
 
 function renderEditList() {
   const L = $('editList'); L.innerHTML = '';
@@ -281,7 +295,7 @@ function loadToForm(s) {
   $('editStatus').textContent = s.name ? `編集中: ${s.name}` : '新規作成';
 }
 
-$('newBtn').onclick = () => { loadToForm(blank()); };
+$('newBtn').onclick = () => loadToForm(blank());
 $('pickBtn').onclick = () => renderEditList();
 
 function renderSns() {
@@ -292,11 +306,11 @@ function renderSns() {
       <input type="text" placeholder="プラットフォーム（X / YouTube等）" value="${x.platform||''}" data-k="platform" data-i="${i}">
       <input type="text" placeholder="ID（@name）" value="${x.id||''}" data-k="id" data-i="${i}">
       <input type="text" placeholder="URL" value="${x.url||''}" data-k="url" data-i="${i}">
-      <button class="mini" data-del="${i}">削除</button>`;
+      <button class="mini">削除</button>`;
     d.querySelectorAll('input').forEach(inp => {
       inp.oninput = e => { editing.sns[e.target.dataset.i][e.target.dataset.k] = e.target.value; };
     });
-    d.querySelector('[data-del]').onclick = () => { editing.sns.splice(i,1); renderSns(); };
+    d.querySelector('.mini').onclick = () => { editing.sns.splice(i,1); renderSns(); };
     W.appendChild(d);
   });
 }
@@ -309,11 +323,11 @@ function renderSites() {
     d.innerHTML = `
       <input type="text" placeholder="サイト名（ふわっち / Kick / ツイキャス）" value="${x.name||''}" data-k="name" data-i="${i}">
       <input type="text" placeholder="ID" value="${x.id||''}" data-k="id" data-i="${i}">
-      <button class="mini" data-del="${i}">削除</button>`;
+      <button class="mini">削除</button>`;
     d.querySelectorAll('input').forEach(inp => {
       inp.oninput = e => { editing.sites[e.target.dataset.i][e.target.dataset.k] = e.target.value; };
     });
-    d.querySelector('[data-del]').onclick = () => { editing.sites.splice(i,1); renderSites(); };
+    d.querySelector('.mini').onclick = () => { editing.sites.splice(i,1); renderSites(); };
     W.appendChild(d);
   });
 }
@@ -353,10 +367,8 @@ $('saveBtn').onclick = async () => {
   editing.intro = $('f-intro').value;
   if (!editing.name) { $('editStatus').textContent = '配信者名は必須です'; return; }
 
-  if (!editing.id) {
-    editing.id = 'streamer_' + Date.now();
-    all.push(editing);
-  } else {
+  if (!editing.id) { editing.id = 'streamer_' + Date.now(); all.push(editing); }
+  else {
     const i = all.findIndex(s => s.id === editing.id);
     if (i >= 0) all[i] = editing; else all.push(editing);
   }
@@ -394,13 +406,14 @@ $('exportBtn').onclick = () => {
 
 function bgRGB(level){
   const t = Math.max(0, Math.min(100, level)) / 100;
-  return [Math.round(12 + t*52), Math.round(14 + t*54), Math.round(18 + t*60)];
+  return [Math.round(10 + t*62), Math.round(12 + t*64), Math.round(16 + t*70)];
 }
 
 function sendSettings() {
+  const raw = +$('s-bg').value / 100;
   const st = {
     width: +$('s-width').value,
-    bgOpacity: +$('s-bg').value / 100,
+    bgOpacity: raw,
     bgLevel: +$('s-lvl').value,
     fontScale: +$('s-font').value
   };
@@ -409,25 +422,29 @@ function sendSettings() {
   $('v-lvl').textContent = st.bgLevel;
   $('v-font').textContent = st.fontScale.toFixed(2) + 'x';
   const [r,g,b] = bgRGB(st.bgLevel);
-  $('swatch').style.background = `rgba(${r},${g},${b},${st.bgOpacity})`;
+  $('swatch').style.background = `rgba(${r},${g},${b},${Math.pow(raw,0.45).toFixed(3)})`;
   send({type:'updateSettings', settings:st});
 }
 
 function applySettingsUI(st) {
   if (!st) return;
-  $('s-width').value = st.width;
-  $('s-bg').value = Math.round((st.bgOpacity ?? 0.85) * 100);
+  $('s-width').value = st.width ?? 640;
+  $('s-bg').value = Math.round((st.bgOpacity ?? 0.88) * 100);
   $('s-lvl').value = st.bgLevel ?? 12;
   $('s-font').value = st.fontScale ?? 1;
-  $('v-width').textContent = st.width + 'px';
+  const raw = +$('s-bg').value / 100;
+  $('v-width').textContent = $('s-width').value + 'px';
   $('v-bg').textContent = $('s-bg').value + '%';
   $('v-lvl').textContent = $('s-lvl').value;
   $('v-font').textContent = (+$('s-font').value).toFixed(2) + 'x';
   const [r,g,b] = bgRGB(+$('s-lvl').value);
-  $('swatch').style.background = `rgba(${r},${g},${b},${+$('s-bg').value/100})`;
+  $('swatch').style.background = `rgba(${r},${g},${b},${Math.pow(raw,0.45).toFixed(3)})`;
 }
 
 ['s-width','s-bg','s-lvl','s-font'].forEach(id => $(id).oninput = sendSettings);
+document.querySelectorAll('.presets button').forEach(b => {
+  b.onclick = () => { $('s-bg').value = b.dataset.bg; sendSettings(); };
+});
 
 editing = blank();
 connect(); load(); renderGojuon(); sendSettings();
