@@ -5,7 +5,7 @@ const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
 let streamersData = [];
-let overlaySettings = { width: 640, bgOpacity: 0.88, bgLevel: 12, fontScale: 1 };
+let overlaySettings = { width: 640, bgOpacity: 0.88, bgLevel: 12, fontScale: 1, volume: 60 };
 let connectedClients = { dock: new Set(), overlay: new Set() };
 
 const streamersJsonPath = path.join(__dirname, 'streamers.json');
@@ -54,7 +54,10 @@ function serveFile(res, fileName) {
       res.end(`File not found: ${fileName}`);
       return;
     }
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store, no-cache, must-revalidate'
+    });
     res.end(fs.readFileSync(filePath, 'utf-8'));
   } catch (err) {
     res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -158,7 +161,6 @@ wss.on('connection', (ws) => {
         return;
       }
 
-      // 動画再生
       if (msg.type === 'playVideo') {
         connectedClients.overlay.forEach(c => {
           if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'playVideo', url: msg.url, title: msg.title }));
@@ -166,10 +168,18 @@ wss.on('connection', (ws) => {
         return;
       }
 
-      // 動画停止
       if (msg.type === 'stopVideo') {
         connectedClients.overlay.forEach(c => {
           if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'stopVideo' }));
+        });
+        return;
+      }
+
+      // 音量変更
+      if (msg.type === 'setVolume') {
+        overlaySettings.volume = msg.volume;
+        connectedClients.overlay.forEach(c => {
+          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'setVolume', volume: msg.volume }));
         });
         return;
       }
