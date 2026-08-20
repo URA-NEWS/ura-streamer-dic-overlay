@@ -5,7 +5,7 @@ const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
 let streamersData = [];
-let overlaySettings = { width: 640, bgOpacity: 1, fontScale: 1 };
+let overlaySettings = { width: 640, bgOpacity: 0.85, bgLevel: 12, fontScale: 1 };
 let connectedClients = { dock: new Set(), overlay: new Set() };
 
 const streamersJsonPath = path.join(__dirname, 'streamers.json');
@@ -81,7 +81,6 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 保存（追加/更新/削除まとめて）
   if (url === '/api/streamers' && req.method === 'POST') {
     try {
       const body = await readBody(req);
@@ -89,7 +88,6 @@ const server = http.createServer(async (req, res) => {
       if (!Array.isArray(data)) throw new Error('array required');
       streamersData = data;
       const ok = saveStreamersData();
-      // 全ドックに更新通知
       connectedClients.dock.forEach(c => {
         if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'dataUpdated' }));
       });
@@ -154,7 +152,14 @@ wss.on('connection', (ws) => {
         return;
       }
 
-      // 表示設定の変更（幅・背景透過・文字サイズ）
+      // スクロール操作
+      if (msg.type === 'scroll') {
+        connectedClients.overlay.forEach(c => {
+          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'scroll', dir: msg.dir }));
+        });
+        return;
+      }
+
       if (msg.type === 'updateSettings') {
         overlaySettings = Object.assign(overlaySettings, msg.settings || {});
         connectedClients.overlay.forEach(c => {
