@@ -65,7 +65,8 @@ html,body{width:1280px;height:720px;background:transparent;overflow:hidden;
 .player.on{display:flex}
 .player-title{color:var(--gold);font-size:26px;font-weight:700;margin-bottom:16px;
   text-align:center;max-width:1100px;text-shadow:0 2px 8px rgba(0,0,0,1)}
-.player-frame{width:1120px;height:630px;border:none;background:#000;border-radius:8px}
+.player-stage{width:1120px;height:630px;background:#000;border-radius:8px;overflow:hidden}
+#ytPlayer,.player-frame{width:100%;height:100%;border:none;display:block}
 </style>
 </head>
 <body>
@@ -76,7 +77,10 @@ html,body{width:1280px;height:720px;background:transparent;overflow:hidden;
 
 <div class="player" id="player">
   <div class="player-title" id="playerTitle"></div>
-  <iframe class="player-frame" id="playerFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+  <div class="player-stage">
+    <div id="ytPlayer" style="display:none"></div>
+    <iframe class="player-frame" id="playerFrame" allow="autoplay; encrypted-media" allowfullscreen style="display:none"></iframe>
+  </div>
 </div>
 
 <script>
@@ -85,8 +89,42 @@ const bd = document.getElementById('bd');
 const player = document.getElementById('player');
 const playerFrame = document.getElementById('playerFrame');
 const playerTitle = document.getElementById('playerTitle');
+const ytDiv = document.getElementById('ytPlayer');
 let ws = null;
-let cur = { width:640, bgOpacity:0.88, bgLevel:12, fontScale:1 };
+let cur = { width:640, bgOpacity:0.88, bgLevel:12, fontScale:1, volume:60 };
+let ytPlayer = null, ytReady = false, pendingVideoId = null;
+
+// YouTube IFrame API 読み込み
+(function(){
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+})();
+
+window.onYouTubeIframeAPIReady = function(){
+  ytPlayer = new YT.Player('ytPlayer', {
+    height: '100%', width: '100%', videoId: '',
+    playerVars: { autoplay: 0, rel: 0, modestbranding: 1, playsinline: 1 },
+    events: {
+      onReady: () => {
+        ytReady = true;
+        try { ytPlayer.setVolume(cur.volume); } catch {}
+        if (pendingVideoId){ const v = pendingVideoId; pendingVideoId = null; loadYT(v); }
+      }
+    }
+  });
+};
+
+function loadYT(videoId){
+  if (!ytReady){ pendingVideoId = videoId; return; }
+  ytDiv.style.display = 'block';
+  playerFrame.style.display = 'none';
+  try {
+    ytPlayer.loadVideoById(videoId);
+    ytPlayer.setVolume(cur.volume);
+    ytPlayer.playVideo();
+  } catch {}
+}
 
 function connect(){
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -101,8 +139,14 @@ function connect(){
     if (m.type === 'scroll') doScroll(m.dir);
     if (m.type === 'playVideo') playVideo(m.url, m.title);
     if (m.type === 'stopVideo') stopVideo();
+    if (m.type === 'setVolume') setVolume(m.volume);
   };
   ws.onclose = () => setTimeout(connect, 3000);
+}
+
+function setVolume(v){
+  cur.volume = v;
+  if (ytPlayer && ytReady){ try { ytPlayer.setVolume(v); } catch {} }
 }
 
 function isX(u){
@@ -112,27 +156,33 @@ function isX(u){
   } catch { return false; }
 }
 
-function embedUrl(u){
-  if (!u) return '';
+function ytVideoId(u){
   try {
     const url = new URL(u);
     const h = url.hostname.replace('www.','');
     if (h === 'youtube.com' || h === 'm.youtube.com'){
       const v = url.searchParams.get('v');
-      if (v) return `https://www.youtube.com/embed/${v}?autoplay=1&rel=0`;
-      if (url.pathname.startsWith('/live/')) return `https://www.youtube.com/embed/${url.pathname.split('/')[2]}?autoplay=1&rel=0`;
-      if (url.pathname.startsWith('/shorts/')) return `https://www.youtube.com/embed/${url.pathname.split('/')[2]}?autoplay=1&rel=0`;
-      if (url.pathname.startsWith('/embed/')) return u;
+      if (v) return v;
+      const p = url.pathname.split('/').filter(Boolean);
+      if (p[0] === 'live' || p[0] === 'shorts' || p[0] === 'embed') return p[1] || '';
     }
-    if (h === 'youtu.be') return `https://www.youtube.com/embed/${url.pathname.slice(1)}?autoplay=1&rel=0`;
+    if (h === 'youtu.be') return url.pathname.slice(1);
+    return '';
+  } catch { return ''; }
+}
+
+function otherEmbed(u){
+  try {
+    const url = new URL(u);
+    const h = url.hostname.replace('www.','');
     if (h === 'twitcasting.tv'){
-      const parts = url.pathname.split('/').filter(Boolean);
-      if (parts.length >= 3 && parts[1] === 'movie') return `https://twitcasting.tv/${parts[0]}/embeddedplayer/${parts[2]}?auto_play=true`;
+      const p = url.pathname.split('/').filter(Boolean);
+      if (p.length >= 3 && p[1] === 'movie') return `https://twitcasting.tv/${p[0]}/embeddedplayer/${p[2]}?auto_play=true`;
     }
     if (h === 'kick.com'){
-      const parts = url.pathname.split('/').filter(Boolean);
-      if (parts.length >= 3 && parts[1] === 'videos') return `https://player.kick.com/video/${parts[2]}?autoplay=true`;
-      if (parts.length === 1) return `https://player.kick.com/${parts[0]}?autoplay=true`;
+      const p = url.pathname.split('/').filter(Boolean);
+      if (p.length >= 3 && p[1] === 'videos') return `https://player.kick.com/video/${p[2]}?autoplay=true`;
+      if (p.length === 1) return `https://player.kick.com/${p[0]}?autoplay=true`;
     }
     return u;
   } catch { return u; }
@@ -140,15 +190,25 @@ function embedUrl(u){
 
 function playVideo(u, title){
   if (!u || isX(u)) return;
-  const src = embedUrl(u);
-  if (!src) return;
   playerTitle.textContent = title || '';
-  playerFrame.src = src;
+
+  const vid = ytVideoId(u);
+  if (vid){
+    loadYT(vid);
+  } else {
+    ytDiv.style.display = 'none';
+    if (ytPlayer && ytReady){ try { ytPlayer.stopVideo(); } catch {} }
+    playerFrame.src = otherEmbed(u);
+    playerFrame.style.display = 'block';
+  }
   player.classList.add('on');
 }
 
 function stopVideo(){
+  if (ytPlayer && ytReady){ try { ytPlayer.stopVideo(); } catch {} }
+  ytDiv.style.display = 'none';
   playerFrame.src = '';
+  playerFrame.style.display = 'none';
   player.classList.remove('on');
 }
 
@@ -173,6 +233,7 @@ function applySettings(st){
   const raw = Math.max(0, Math.min(1, cur.bgOpacity));
   const a = Math.pow(raw, 0.45);
   wrap.style.backgroundColor = `rgba(${R},${G},${B},${a.toFixed(3)})`;
+  if (st.volume != null) setVolume(st.volume);
 }
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
