@@ -27,7 +27,7 @@ textarea{min-height:70px;resize:vertical}
 .gojuon{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}
 .gbtn{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:var(--dim);cursor:pointer;font-size:12px;font-weight:700}
 .gbtn.active{background:var(--cyan);color:#001217}
-.list{max-height:240px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
+.list{max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
 .item{display:flex;gap:10px;align-items:center;padding:9px;border-bottom:1px solid var(--line);cursor:pointer}
 .item:last-child{border-bottom:none}
 .item:hover{background:var(--panel)}
@@ -43,6 +43,8 @@ button.warn{border-color:var(--magenta);color:var(--magenta)}
 button.warn:hover{background:var(--magenta);color:#000}
 button.ok{border-color:var(--green);color:var(--green)}
 button.ok:hover{background:var(--green);color:#001217}
+button.gold{border-color:var(--gold);color:var(--gold)}
+button.gold:hover{background:var(--gold);color:#1a1400}
 .scroll-pad{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
 .scroll-pad button{background:var(--panel);border:1px solid var(--line);color:var(--dim);
   padding:10px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700}
@@ -65,6 +67,15 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
 .presets button{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--dim);
   border-radius:6px;padding:6px;cursor:pointer;font-size:11px;font-weight:700}
 .presets button:hover{border-color:var(--gold);color:var(--gold)}
+.vid-list{border:1px solid var(--gold);border-radius:8px;background:var(--panel);margin-top:6px;
+  max-height:210px;overflow-y:auto}
+.vid{display:flex;gap:9px;align-items:center;padding:7px;border-bottom:1px solid var(--line);cursor:pointer}
+.vid:last-child{border-bottom:none}
+.vid:hover{background:var(--panel-2)}
+.vid img{width:78px;height:44px;object-fit:cover;border-radius:4px;background:#000;flex-shrink:0}
+.vid .no-th{width:78px;height:44px;border-radius:4px;background:var(--panel-2);
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.vid-t{font-size:12px;font-weight:700;line-height:1.35}
 </style>
 </head>
 <body>
@@ -90,6 +101,13 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
   <div class="row">
     <button class="act warn" id="hideBtn">オーバーレイを非表示</button>
   </div>
+
+  <h3 id="vidHead" style="display:none">代表的配信（タップで再生）</h3>
+  <div class="vid-list" id="vidList" style="display:none"></div>
+  <div class="row" id="vidStopRow" style="display:none">
+    <button class="act warn" id="stopVidBtn">動画を停止</button>
+  </div>
+
   <div class="status" id="status">接続中...</div>
 </div>
 
@@ -117,6 +135,16 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
   <label class="f">読み仮名（ひらがな・50音索引用）</label>
   <input type="text" id="f-yomi" placeholder="いこえる">
 
+  <h3>配信者情報</h3>
+  <label class="f">活動期間</label>
+  <input type="text" id="f-period" placeholder="2020年〜">
+  <label class="f">配信スタイル</label>
+  <input type="text" id="f-style" placeholder="雑談 / ゲーム / 歌枠">
+  <label class="f">生年月日または年齢</label>
+  <input type="text" id="f-birth" placeholder="1995年3月1日 / 30歳">
+  <label class="f">出身地</label>
+  <input type="text" id="f-origin" placeholder="東京都">
+
   <h3>SNS</h3>
   <div id="snsWrap"></div>
   <button class="act" id="snsAdd">＋SNS追加</button>
@@ -125,6 +153,10 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
   <div id="siteWrap"></div>
   <button class="act" id="siteAdd">＋配信サイト追加</button>
 
+  <h3>代表的配信</h3>
+  <div id="vidWrap"></div>
+  <button class="act gold" id="vidAdd">＋代表的配信を追加</button>
+
   <label class="f">紹介文</label>
   <textarea id="f-intro" placeholder="紹介文..."></textarea>
 
@@ -132,9 +164,14 @@ label.f{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
     <button class="act ok" id="saveBtn">保存</button>
     <button class="act warn" id="delBtn">この配信者を削除</button>
   </div>
+
+  <h3>データ管理（全件まとめて）</h3>
   <div class="row">
-    <button class="act" id="exportBtn">streamers.json をダウンロード</button>
+    <button class="act" id="exportBtn">エクスポート</button>
+    <button class="act" id="importBtn">インポート</button>
   </div>
+  <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+  <div class="hint">エクスポート＝全配信者を1つのJSONに保存 / インポート＝全件を置き換え</div>
   <div class="status" id="editStatus">&nbsp;</div>
 </div>
 
@@ -249,6 +286,23 @@ function avatarHtml(s) {
   return s.photoUrl ? `<img class="av" src="${s.photoUrl}" alt="">` : `<div class="av no">📷</div>`;
 }
 
+// YouTubeサムネイル取得
+function thumbUrl(u){
+  if (!u) return '';
+  try {
+    const url = new URL(u);
+    const h = url.hostname.replace('www.','');
+    let vid = '';
+    if (h === 'youtube.com' || h === 'm.youtube.com'){
+      vid = url.searchParams.get('v') || '';
+      if (!vid && url.pathname.startsWith('/live/')) vid = url.pathname.split('/')[2] || '';
+      if (!vid && url.pathname.startsWith('/shorts/')) vid = url.pathname.split('/')[2] || '';
+    }
+    if (h === 'youtu.be') vid = url.pathname.slice(1);
+    return vid ? `https://i.ytimg.com/vi/${vid}/mqdefault.jpg` : '';
+  } catch { return ''; }
+}
+
 function render() {
   const L = $('list'); L.innerHTML = '';
   if (!filtered.length) { L.innerHTML = '<div style="padding:18px;text-align:center;color:var(--dim)">該当なし</div>'; return; }
@@ -260,16 +314,42 @@ function render() {
       document.querySelectorAll('#list .item').forEach(x => x.classList.remove('sel'));
       d.classList.add('sel');
       send({type:'selectStreamer', streamerId:s.id});
+      renderVideoList(s);
     };
     L.appendChild(d);
   });
 }
 
-$('hideBtn').onclick    = () => send({type:'hideStreamer'});
-$('sc-up').onclick      = () => send({type:'scroll', dir:'up'});
-$('sc-down').onclick    = () => send({type:'scroll', dir:'down'});
-$('sc-top').onclick     = () => send({type:'scroll', dir:'top'});
-$('sc-bottom').onclick  = () => send({type:'scroll', dir:'bottom'});
+function renderVideoList(s){
+  const vids = (s.videos || []).filter(v => v.title || v.url);
+  const L = $('vidList');
+  if (!vids.length){
+    $('vidHead').style.display = 'none';
+    L.style.display = 'none';
+    $('vidStopRow').style.display = 'none';
+    return;
+  }
+  $('vidHead').style.display = '';
+  L.style.display = '';
+  $('vidStopRow').style.display = '';
+  L.innerHTML = '';
+  vids.forEach(v => {
+    const th = thumbUrl(v.url);
+    const d = document.createElement('div');
+    d.className = 'vid';
+    d.innerHTML = (th ? `<img src="${th}" alt="">` : `<div class="no-th">▶</div>`)
+      + `<div class="vid-t">${v.title || v.url}</div>`;
+    d.onclick = () => send({type:'playVideo', url:v.url, title:v.title});
+    L.appendChild(d);
+  });
+}
+
+$('stopVidBtn').onclick  = () => send({type:'stopVideo'});
+$('hideBtn').onclick     = () => send({type:'hideStreamer'});
+$('sc-up').onclick       = () => send({type:'scroll', dir:'up'});
+$('sc-down').onclick     = () => send({type:'scroll', dir:'down'});
+$('sc-top').onclick      = () => send({type:'scroll', dir:'top'});
+$('sc-bottom').onclick   = () => send({type:'scroll', dir:'bottom'});
 
 function renderEditList() {
   const L = $('editList'); L.innerHTML = '';
@@ -282,17 +362,24 @@ function renderEditList() {
   });
 }
 
-function blank() { return { id:'', name:'', yomi:'', photoUrl:'', sns:[], sites:[], intro:'' }; }
+function blank() {
+  return { id:'', name:'', yomi:'', photoUrl:'', activePeriod:'', style:'', birth:'', origin:'',
+           sns:[], sites:[], videos:[], intro:'' };
+}
 
 function loadToForm(s) {
-  editing = JSON.parse(JSON.stringify(s));
-  $('f-name').value = s.name || '';
-  $('f-yomi').value = s.yomi || '';
-  $('f-photo').value = (s.photoUrl && s.photoUrl.startsWith('data:')) ? '' : (s.photoUrl || '');
-  $('f-intro').value = s.intro || '';
-  $('preview').src = s.photoUrl || '';
-  renderSns(); renderSites(); renderEditList();
-  $('editStatus').textContent = s.name ? `編集中: ${s.name}` : '新規作成';
+  editing = Object.assign(blank(), JSON.parse(JSON.stringify(s)));
+  $('f-name').value = editing.name || '';
+  $('f-yomi').value = editing.yomi || '';
+  $('f-photo').value = (editing.photoUrl && editing.photoUrl.startsWith('data:')) ? '' : (editing.photoUrl || '');
+  $('f-period').value = editing.activePeriod || '';
+  $('f-style').value = editing.style || '';
+  $('f-birth').value = editing.birth || '';
+  $('f-origin').value = editing.origin || '';
+  $('f-intro').value = editing.intro || '';
+  $('preview').src = editing.photoUrl || '';
+  renderSns(); renderSites(); renderVids(); renderEditList();
+  $('editStatus').textContent = editing.name ? `編集中: ${editing.name}` : '新規作成';
 }
 
 $('newBtn').onclick = () => loadToForm(blank());
@@ -333,6 +420,23 @@ function renderSites() {
 }
 $('siteAdd').onclick = () => { if(!editing) editing = blank(); (editing.sites ||= []).push({name:'',id:''}); renderSites(); };
 
+function renderVids() {
+  const W = $('vidWrap'); W.innerHTML = '';
+  (editing.videos || []).forEach((x, i) => {
+    const d = document.createElement('div'); d.className = 'sub';
+    d.innerHTML = `
+      <input type="text" placeholder="タイトル" value="${x.title||''}" data-k="title" data-i="${i}">
+      <input type="text" placeholder="URL（YouTube / ツイキャス / Kick）" value="${x.url||''}" data-k="url" data-i="${i}">
+      <button class="mini">削除</button>`;
+    d.querySelectorAll('input').forEach(inp => {
+      inp.oninput = e => { editing.videos[e.target.dataset.i][e.target.dataset.k] = e.target.value; };
+    });
+    d.querySelector('.mini').onclick = () => { editing.videos.splice(i,1); renderVids(); };
+    W.appendChild(d);
+  });
+}
+$('vidAdd').onclick = () => { if(!editing) editing = blank(); (editing.videos ||= []).push({title:'',url:''}); renderVids(); };
+
 $('imgBtn').onclick = () => $('imgFile').click();
 $('imgFile').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
@@ -364,6 +468,10 @@ $('saveBtn').onclick = async () => {
   if (!editing) { $('editStatus').textContent = '編集対象がありません'; return; }
   editing.name = $('f-name').value.trim();
   editing.yomi = $('f-yomi').value.trim();
+  editing.activePeriod = $('f-period').value.trim();
+  editing.style = $('f-style').value.trim();
+  editing.birth = $('f-birth').value.trim();
+  editing.origin = $('f-origin').value.trim();
   editing.intro = $('f-intro').value;
   if (!editing.name) { $('editStatus').textContent = '配信者名は必須です'; return; }
 
@@ -402,6 +510,27 @@ $('exportBtn').onclick = () => {
   a.href = URL.createObjectURL(blob);
   a.download = 'streamers.json';
   a.click();
+};
+
+$('importBtn').onclick = () => $('importFile').click();
+$('importFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = async ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data)) throw new Error('配列形式のJSONではありません');
+      if (!confirm(`${data.length}件を読み込み、現在の${all.length}件を全て置き換えます。よろしいですか？`)) return;
+      all = data.map(s => Object.assign(blank(), s, { id: s.id || ('streamer_' + Math.random().toString(36).slice(2)) }));
+      await push();
+      loadToForm(blank());
+      $('editStatus').textContent = `インポート完了（${all.length}件）`;
+    } catch (err) {
+      $('editStatus').textContent = 'インポート失敗: ' + err.message;
+    }
+  };
+  rd.readAsText(f);
+  e.target.value = '';
 };
 
 function bgRGB(level){
