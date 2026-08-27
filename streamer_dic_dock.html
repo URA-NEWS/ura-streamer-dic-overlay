@@ -194,16 +194,9 @@ button.rose:hover{background:var(--rose);color:#fff}
 
 .box{border:1px solid var(--rule-2);padding:11px;margin-top:8px;background:var(--slab)}
 .box.amber{border-color:rgba(232,163,61,.5)}
-.box.jade{border-color:rgba(90,209,168,.45)}
 .box-label{
   font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--amber);margin-bottom:9px
 }
-.bk-path{font-family:var(--mono);font-size:11px;color:var(--jade);margin-top:9px;word-break:break-all;line-height:1.6}
-.bk-file{display:flex;gap:10px;align-items:center;padding:9px;border-bottom:1px solid var(--rule);cursor:pointer}
-.bk-file:last-child{border-bottom:none}
-.bk-file:hover{background:var(--slab-2)}
-.bk-file .fn{flex:1;font-family:var(--mono);font-size:11px;word-break:break-all}
-.bk-file .fs{font-family:var(--mono);font-size:10px;color:var(--dim);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -301,11 +294,6 @@ button.rose:hover{background:var(--rose);color:#fff}
   <label class="f">出身地</label>
   <textarea id="f-origin" placeholder="東京都"></textarea>
 
-  <h3>年表<span class="bar"></span></h3>
-  <div class="hint">年月・出来事・画像・URLを登録すると、オーバーレイに年ごとの年表として並びます。並び順は年月から自動で決まります。</div>
-  <div id="tlWrap" style="margin-top:8px"></div>
-  <button class="act amber" id="tlAdd" style="width:100%">＋ 年表に追加</button>
-
   <h3>配信サイト<span class="bar"></span></h3>
   <div id="siteWrap"></div>
   <button class="act" id="siteAdd" style="width:100%">＋ 配信サイトを追加</button>
@@ -319,6 +307,11 @@ button.rose:hover{background:var(--rose);color:#fff}
   <textarea id="f-intro" placeholder="どんな配信者かを一段落で" style="min-height:110px"></textarea>
   <div class="hint">改行はそのままオーバーレイに反映されます。</div>
 
+  <h3>年表<span class="bar"></span></h3>
+  <div class="hint">年月・出来事・画像・URLを登録すると、オーバーレイに年ごとの年表として並びます。並び順は年月から自動で決まります。</div>
+  <div id="tlWrap" style="margin-top:8px"></div>
+  <button class="act amber" id="tlAdd" style="width:100%">＋ 年表に追加</button>
+
   <div class="row">
     <button class="act jade" id="saveBtn">保存する</button>
     <button class="act rose" id="delBtn">この配信者を削除</button>
@@ -331,24 +324,6 @@ button.rose:hover{background:var(--rose);color:#fff}
   </div>
   <input type="file" id="importFile" accept="application/json,.json" style="display:none">
   <div class="hint">全配信者を1つのJSONにまとめて書き出し／読み込みします。読み込むと全件が置き換わります。</div>
-
-  <div class="box jade">
-    <div class="box-label" style="color:var(--jade)">ローカルバックアップ</div>
-    <div class="row" style="margin-top:0">
-      <button class="act amber" id="bkPick">保存先フォルダを選ぶ</button>
-    </div>
-    <div class="bk-path" id="bkPath">保存先は未設定です</div>
-    <div class="row">
-      <button class="act jade" id="bkNow">今すぐ保存</button>
-      <button class="act" id="bkListBtn">復元する</button>
-    </div>
-    <div class="list" id="bkFiles" style="display:none;max-height:200px;margin-top:8px"></div>
-    <div class="row">
-      <button class="act rose" id="bkClear">保存先を解除</button>
-    </div>
-    <div class="hint">1日1回、選んだフォルダへ自動で保存します。Chrome / Edge で開いたときだけ使えます。</div>
-    <div class="status" id="bkStatus">&nbsp;</div>
-  </div>
 
   <div class="status" id="editStatus">&nbsp;</div>
 </div>
@@ -440,7 +415,6 @@ async function load(){
     filtered = all;
     render(); renderEditList();
     $('brandCount').textContent = String(all.length).padStart(3,'0');
-    maybeDailyBackup();
   } catch { $('status').textContent = 'データを読み込めませんでした'; }
 }
 
@@ -839,7 +813,6 @@ async function push(){
     $('editStatus').textContent = j.ok ? `保存しました（${j.count}件）` : '保存できませんでした';
     filtered = all; render(); renderEditList();
     $('brandCount').textContent = String(all.length).padStart(3,'0');
-    maybeDailyBackup();
   } catch (err){
     $('editStatus').textContent = '保存できませんでした：' + err.message;
   }
@@ -882,175 +855,6 @@ function normalize(s){
   if (!Array.isArray(o.timeline)) o.timeline = [];
   delete o.sns;
   return o;
-}
-
-/* ═══ ローカルバックアップ ═══ */
-const BK_SUPPORTED = typeof window.showDirectoryPicker === 'function';
-const IDB_NAME = 'streamerDicBackup', IDB_STORE = 'handles', IDB_KEY = 'dir';
-const LS_LAST = 'streamerDic_lastBackup';
-let bkDir = null;
-
-function idbOpen(){
-  return new Promise((res, rej) => {
-    const r = indexedDB.open(IDB_NAME, 1);
-    r.onupgradeneeded = () => r.result.createObjectStore(IDB_STORE);
-    r.onsuccess = () => res(r.result);
-    r.onerror = () => rej(r.error);
-  });
-}
-async function idbGet(k){
-  const db = await idbOpen();
-  return new Promise((res, rej) => {
-    const q = db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).get(k);
-    q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
-  });
-}
-async function idbSet(k,v){
-  const db = await idbOpen();
-  return new Promise((res, rej) => {
-    const q = db.transaction(IDB_STORE,'readwrite').objectStore(IDB_STORE).put(v,k);
-    q.onsuccess = () => res(); q.onerror = () => rej(q.error);
-  });
-}
-async function idbDel(k){
-  const db = await idbOpen();
-  return new Promise((res, rej) => {
-    const q = db.transaction(IDB_STORE,'readwrite').objectStore(IDB_STORE).delete(k);
-    q.onsuccess = () => res(); q.onerror = () => rej(q.error);
-  });
-}
-
-function bkMsg(t){ $('bkStatus').textContent = t; }
-function dayKey(d){
-  const x = d || new Date();
-  const p = n => String(n).padStart(2,'0');
-  return `${x.getFullYear()}-${p(x.getMonth()+1)}-${p(x.getDate())}`;
-}
-async function bkPermission(h, ask){
-  if (!h) return false;
-  const opt = { mode:'readwrite' };
-  if (await h.queryPermission(opt) === 'granted') return true;
-  if (!ask) return false;
-  return await h.requestPermission(opt) === 'granted';
-}
-
-async function bkInit(){
-  if (!BK_SUPPORTED){
-    ['bkPick','bkNow','bkListBtn','bkClear'].forEach(id => $(id).disabled = true);
-    $('bkPath').textContent = 'このブラウザでは使えません。Chrome か Edge で開いてください。';
-    bkMsg('「書き出す」「読み込む」は使えます');
-    return;
-  }
-  try {
-    const h = await idbGet(IDB_KEY);
-    if (h){
-      bkDir = h;
-      $('bkPath').textContent = '保存先：' + h.name;
-      const ok = await bkPermission(h, false);
-      bkMsg(ok ? `前回の保存：${localStorage.getItem(LS_LAST) || 'なし'}` : '「今すぐ保存」を押して権限を許可してください');
-    }
-  } catch {}
-}
-
-$('bkPick').onclick = async () => {
-  if (!BK_SUPPORTED) return;
-  try {
-    const h = await window.showDirectoryPicker({ mode:'readwrite' });
-    if (!await bkPermission(h, true)){ bkMsg('権限が許可されませんでした'); return; }
-    bkDir = h;
-    await idbSet(IDB_KEY, h);
-    $('bkPath').textContent = '保存先：' + h.name;
-    await bkWrite(true);
-  } catch (err){
-    if (err && err.name !== 'AbortError') bkMsg('フォルダを選べませんでした：' + err.message);
-  }
-};
-
-$('bkClear').onclick = async () => {
-  if (!confirm('保存先フォルダの設定を解除します。よろしいですか？')) return;
-  bkDir = null;
-  try { await idbDel(IDB_KEY); } catch {}
-  localStorage.removeItem(LS_LAST);
-  $('bkPath').textContent = '保存先は未設定です';
-  $('bkFiles').style.display = 'none';
-  bkMsg('解除しました');
-};
-
-async function bkWrite(ask){
-  if (!bkDir){ bkMsg('先に保存先フォルダを選んでください'); return false; }
-  if (!await bkPermission(bkDir, !!ask)){ bkMsg('「今すぐ保存」を押して権限を許可してください'); return false; }
-  try {
-    const json = JSON.stringify(all, null, 2);
-    const today = dayKey();
-    for (const name of [`streamers_${today}.json`, 'streamers_latest.json']){
-      const fh = await bkDir.getFileHandle(name, { create:true });
-      const w = await fh.createWritable();
-      await w.write(json);
-      await w.close();
-    }
-    localStorage.setItem(LS_LAST, today);
-    bkMsg(`保存しました：${today}（${all.length}件）`);
-    return true;
-  } catch (err){
-    bkMsg('保存できませんでした：' + err.message);
-    return false;
-  }
-}
-$('bkNow').onclick = () => bkWrite(true);
-
-async function maybeDailyBackup(){
-  if (!BK_SUPPORTED || !bkDir) return;
-  if (localStorage.getItem(LS_LAST) === dayKey()) return;
-  await bkWrite(false);
-}
-
-$('bkListBtn').onclick = async () => {
-  const L = $('bkFiles');
-  if (L.style.display !== 'none'){ L.style.display = 'none'; return; }
-  if (!bkDir){ bkMsg('先に保存先フォルダを選んでください'); return; }
-  if (!await bkPermission(bkDir, true)){ bkMsg('権限が許可されませんでした'); return; }
-  try {
-    const files = [];
-    for await (const [name, h] of bkDir.entries()){
-      if (h.kind === 'file' && name.startsWith('streamers_') && name.endsWith('.json')){
-        const f = await h.getFile();
-        files.push({ name, size:f.size, time:f.lastModified, handle:h });
-      }
-    }
-    files.sort((a,b) => b.time - a.time);
-    L.innerHTML = '';
-    if (!files.length){
-      L.innerHTML = '<div class="empty">まだバックアップがありません</div>';
-    } else {
-      files.forEach(f => {
-        const d = document.createElement('div');
-        d.className = 'bk-file';
-        d.innerHTML = `<div class="fn">${f.name}</div><div class="fs">${Math.round(f.size/1024)} KB</div>`;
-        d.onclick = () => bkRestore(f);
-        L.appendChild(d);
-      });
-    }
-    L.style.display = '';
-    bkMsg(`${files.length}件のバックアップ`);
-  } catch (err){
-    bkMsg('読み込めませんでした：' + err.message);
-  }
-};
-
-async function bkRestore(f){
-  try {
-    const file = await f.handle.getFile();
-    const data = JSON.parse(await file.text());
-    if (!Array.isArray(data)) throw new Error('配列形式のJSONではありません');
-    if (!confirm(`${f.name} から ${data.length}件を復元し、いまの${all.length}件を置き換えます。よろしいですか？`)) return;
-    all = data.map(normalize);
-    await push();
-    loadToForm(blank());
-    $('bkFiles').style.display = 'none';
-    bkMsg(`復元しました（${all.length}件）`);
-  } catch (err){
-    bkMsg('復元できませんでした：' + err.message);
-  }
 }
 
 /* ═══ 設定 ═══ */
@@ -1099,7 +903,7 @@ document.querySelectorAll('.presets button[data-bg]').forEach(b => {
 });
 
 editing = blank();
-connect(); load(); renderGojuon(); sendSettings(); bkInit();
+connect(); load(); renderGojuon(); sendSettings();
 </script>
 </body>
 </html>
