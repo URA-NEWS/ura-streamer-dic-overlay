@@ -4,42 +4,145 @@ const path = require('path');
 const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
+
+/* ───── Supabase 設定 ─────
+   SUPABASE_URL              例: https://xxxxxxxx.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY サービスロールキー（サーバー専用・公開禁止）
+   未設定ならローカルファイルに保存する（開発用フォールバック）        */
+const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
+const SB_TABLE = process.env.SUPABASE_TABLE || 'streamer_dic';
+const USE_SB = !!(SB_URL && SB_KEY);
+
+const LOCAL_DIR = process.env.DATA_DIR || __dirname;
+const localStreamersPath = path.join(LOCAL_DIR, 'streamers.json');
+const localSettingsPath  = path.join(LOCAL_DIR, 'settings.json');
+
 let streamersData = [];
-let overlaySettings = { width: 640, bgOpacity: 0.88, bgLevel: 12, fontScale: 1, volume: 60 };
+let overlaySettings = { width: 640, bgOpacity: 0.9, bgLevel: 8, fontScale: 1, volume: 60 };
 let connectedClients = { dock: new Set(), overlay: new Set() };
+let lastError = '';
 
-const streamersJsonPath = path.join(__dirname, 'streamers.json');
-
-function loadStreamersData() {
-  try {
-    if (fs.existsSync(streamersJsonPath)) {
-      streamersData = JSON.parse(fs.readFileSync(streamersJsonPath, 'utf-8'));
-      console.log(`Loaded ${streamersData.length} streamers`);
-    } else {
-      streamersData = [];
-    }
-  } catch (err) {
-    console.error('Failed to load streamers.json:', err.message);
-    streamersData = [];
-  }
+/* ───── Supabase REST ───── */
+function sbHeaders(extra) {
+  return Object.assign({
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    'Content-Type': 'application/json'
+  }, extra || {});
 }
 
-function saveStreamersData() {
+async function sbGet(key) {
+  const url = `${SB_URL}/rest/v1/${SB_TABLE}?key=eq.${encodeURIComponent(key)}&select=data`;
+  const r = await fetch(url, { headers: sbHeaders() });
+  if (!r.ok) throw new Error(`GET ${key} ${r.status} ${await r.text()}`);
+  const rows = await r.json();
+  return rows.length ? rows[0].data : null;
+}
+
+async function sbPut(key, data) {
+  const url = `${SB_URL}/rest/v1/${SB_TABLE}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: sbHeaders({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify([{ key, data, updated_at: new Date().toISOString() }])
+  });
+  if (!r.ok) throw new Error(`PUT ${key} ${r.status} ${await r.text()}`);
+  return true;
+}
+
+/* ───── ローカル保存（フォールバック） ───── */
+function localRead(p, fallback) {
   try {
-    fs.writeFileSync(streamersJsonPath, JSON.stringify(streamersData, null, 2), 'utf-8');
+    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf-8'));
+  } catch (err) { console.error('local read failed:', err.message); }
+  return fallback;
+}
+
+function localWrite(p, data) {
+  try {
+    const tmp = p + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tmp, p);
     return true;
   } catch (err) {
-    console.error('Save failed:', err.message);
+    console.error('local write failed:', err.message);
     return false;
   }
 }
 
+/* ───── 読み込み ───── */
+async function loadAll() {
+  if (USE_SB) {
+    try {
+      const s = await sbGet('streamers');
+      if (Array.isArray(s)) {
+        streamersData = s;
+        console.log(`Supabase: loaded ${s.length} streamers`);
+      } else {
+        // 初回のみ、リポジトリ同梱の streamers.json を移行
+        const seed = localRead(path.join(__dirname, 'streamers.json'), null);
+        streamersData = Array.isArray(seed) ? seed : [];
+        if (streamersData.length) {
+          await sbPut('streamers', streamersData);
+          console.log(`Supabase: seeded ${streamersData.length} streamers`);
+        } else {
+          await sbPut('streamers', []);
+          console.log('Supabase: initialized empty streamers');
+        }
+      }
+
+      const st = await sbGet('settings');
+      if (st && typeof st === 'object') overlaySettings = Object.assign(overlaySettings, st);
+      lastError = '';
+    } catch (err) {
+      lastError = err.message;
+      console.error('Supabase load failed:', err.message);
+      streamersData = localRead(localStreamersPath, []);
+    }
+  } else {
+    streamersData = localRead(localStreamersPath, localRead(path.join(__dirname, 'streamers.json'), []));
+    overlaySettings = Object.assign(overlaySettings, localRead(localSettingsPath, {}));
+    console.log(`Local: loaded ${streamersData.length} streamers`);
+  }
+}
+
+/* ───── 保存 ───── */
+async function saveStreamers() {
+  if (USE_SB) {
+    try {
+      await sbPut('streamers', streamersData);
+      lastError = '';
+      return true;
+    } catch (err) {
+      lastError = err.message;
+      console.error('Supabase save failed:', err.message);
+      return false;
+    }
+  }
+  return localWrite(localStreamersPath, streamersData);
+}
+
+let settingsTimer = null;
+function saveSettingsSoon() {
+  clearTimeout(settingsTimer);
+  settingsTimer = setTimeout(async () => {
+    if (USE_SB) {
+      try { await sbPut('settings', overlaySettings); }
+      catch (err) { console.error('Supabase settings save failed:', err.message); }
+    } else {
+      localWrite(localSettingsPath, overlaySettings);
+    }
+  }, 1500);
+}
+
+/* ───── HTTP ───── */
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', chunk => {
       body += chunk;
-      if (body.length > 50 * 1024 * 1024) { req.destroy(); reject(new Error('too large')); }
+      if (body.length > 80 * 1024 * 1024) { req.destroy(); reject(new Error('too large')); }
     });
     req.on('end', () => resolve(body));
     req.on('error', reject);
@@ -89,13 +192,15 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const data = JSON.parse(body);
       if (!Array.isArray(data)) throw new Error('array required');
+      const prev = streamersData;
       streamersData = data;
-      const ok = saveStreamersData();
+      const ok = await saveStreamers();
+      if (!ok) streamersData = prev;
       connectedClients.dock.forEach(c => {
         if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'dataUpdated' }));
       });
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok, count: streamersData.length }));
+      res.end(JSON.stringify({ ok, count: streamersData.length, error: ok ? undefined : lastError }));
     } catch (err) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: err.message }));
@@ -110,9 +215,39 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url === '/api/reload' && req.method === 'POST') {
-    loadStreamersData();
+    await loadAll();
+    connectedClients.dock.forEach(c => {
+      if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'dataUpdated' }));
+    });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, count: streamersData.length }));
+    return;
+  }
+
+  // 保存先の状態確認
+  if (url === '/api/health' && req.method === 'GET') {
+    const info = {
+      storage: USE_SB ? 'supabase' : 'local-file',
+      supabaseUrl: USE_SB ? SB_URL : null,
+      table: USE_SB ? SB_TABLE : null,
+      streamers: streamersData.length,
+      lastError: lastError || null
+    };
+    if (USE_SB) {
+      try {
+        const probe = await sbGet('streamers');
+        info.reachable = true;
+        info.rowExists = probe !== null;
+      } catch (err) {
+        info.reachable = false;
+        info.lastError = err.message;
+      }
+    } else {
+      info.path = localStreamersPath;
+      info.fileExists = fs.existsSync(localStreamersPath);
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify(info, null, 2));
     return;
   }
 
@@ -120,6 +255,7 @@ const server = http.createServer(async (req, res) => {
   res.end('Not Found');
 });
 
+/* ───── WebSocket ───── */
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
@@ -138,10 +274,13 @@ wss.on('connection', (ws) => {
       }
 
       if (msg.type === 'selectStreamer') {
-        const s = streamersData.find(x => x.id === msg.streamerId);
+        const idx = streamersData.findIndex(x => x.id === msg.streamerId);
+        const s = idx >= 0 ? streamersData[idx] : null;
         if (s) {
           connectedClients.overlay.forEach(c => {
-            if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'showStreamer', streamer: s }));
+            if (c.readyState === WebSocket.OPEN) {
+              c.send(JSON.stringify({ type: 'showStreamer', streamer: s, index: idx }));
+            }
           });
         }
         return;
@@ -175,9 +314,9 @@ wss.on('connection', (ws) => {
         return;
       }
 
-      // 音量変更
       if (msg.type === 'setVolume') {
         overlaySettings.volume = msg.volume;
+        saveSettingsSoon();
         connectedClients.overlay.forEach(c => {
           if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'setVolume', volume: msg.volume }));
         });
@@ -186,6 +325,7 @@ wss.on('connection', (ws) => {
 
       if (msg.type === 'updateSettings') {
         overlaySettings = Object.assign(overlaySettings, msg.settings || {});
+        saveSettingsSoon();
         connectedClients.overlay.forEach(c => {
           if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'settings', settings: overlaySettings }));
         });
@@ -204,8 +344,17 @@ wss.on('connection', (ws) => {
   ws.on('error', (err) => console.error('WS error:', err.message));
 });
 
-console.log(`cwd: ${__dirname}`);
-loadStreamersData();
-server.listen(PORT, () => {
-  console.log(`Streamer Dictionary Overlay Server / Port: ${PORT}`);
+/* ───── 起動 ───── */
+if (typeof fetch !== 'function') {
+  console.error('このNode.jsにはfetchがありません。Node 18以上が必要です。');
+}
+
+loadAll().then(() => {
+  server.listen(PORT, () => {
+    console.log('Streamer Dictionary Overlay Server');
+    console.log(`  Port:      ${PORT}`);
+    console.log(`  Storage:   ${USE_SB ? 'Supabase (' + SB_URL + ' / ' + SB_TABLE + ')' : 'ローカルファイル ' + localStreamersPath}`);
+    console.log(`  Streamers: ${streamersData.length}`);
+    if (!USE_SB) console.log('  ※ SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY が未設定です');
+  });
 });
