@@ -407,6 +407,15 @@ function show(s, index){
   h += '<div class="name-rule"></div>';
   h += '</div></div>';
 
+  const sites = (s.sites || []).filter(x => x.name || x.id);
+  if (sites.length){
+    h += '<div class="sec reveal" style="animation-delay:.04s"><div class="lbl"><span class="sq"></span><span>配信サイト</span><span class="bar"></span></div><div class="sites">';
+    sites.forEach(x => {
+      h += `<div class="site"><b>${esc(x.name)}</b><span>${esc(x.id)}</span></div>`;
+    });
+    h += '</div></div>';
+  }
+
   const rows = [
     ['活動期間', s.activePeriod],
     ['配信スタイル', s.style],
@@ -451,17 +460,6 @@ function show(s, index){
     });
     h += '</div></div>';
     h += '</div>';
-  }
-
-  if (s.sites && s.sites.length){
-    const sites = s.sites.filter(x => x.name || x.id);
-    if (sites.length){
-      h += '<div class="sec reveal" style="animation-delay:.18s"><div class="lbl"><span class="sq"></span><span>配信サイト</span><span class="bar"></span></div><div class="sites">';
-      sites.forEach(x => {
-        h += `<div class="site"><b>${esc(x.name)}</b><span>${esc(x.id)}</span></div>`;
-      });
-      h += '</div></div>';
-    }
   }
 
   const clips = (s.videos || []).filter(v => v.title || v.url);
