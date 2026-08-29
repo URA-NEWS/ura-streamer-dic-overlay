@@ -320,10 +320,11 @@ button.rose:hover{background:var(--rose);color:#fff}
   <h3>データ管理<span class="bar"></span></h3>
   <div class="row" style="margin-top:0">
     <button class="act" id="exportBtn">書き出す</button>
-    <button class="act" id="importBtn">読み込む</button>
+    <button class="act jade" id="mergeBtn">追加する</button>
+    <button class="act" id="importBtn">全部入れ替え</button>
   </div>
   <input type="file" id="importFile" accept="application/json,.json" style="display:none">
-  <div class="hint">全配信者を1つのJSONにまとめて書き出し／読み込みします。読み込むと全件が置き換わります。</div>
+  <div class="hint">「追加する」はJSONの中身を今の一覧に足します。同じidの配信者があればその人だけ上書きします。<br>「全部入れ替え」は今の登録をすべて消して、JSONの内容に置き換えます。</div>
 
   <div class="status" id="editStatus">&nbsp;</div>
 </div>
@@ -826,19 +827,41 @@ $('exportBtn').onclick = () => {
   a.click();
 };
 
-$('importBtn').onclick = () => $('importFile').click();
+let importMode = 'replace';
+$('importBtn').onclick = () => { importMode = 'replace'; $('importFile').click(); };
+$('mergeBtn').onclick  = () => { importMode = 'merge';   $('importFile').click(); };
+
 $('importFile').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
+  const mode = importMode;
   const rd = new FileReader();
   rd.onload = async ev => {
     try {
       const data = JSON.parse(ev.target.result);
       if (!Array.isArray(data)) throw new Error('配列形式のJSONではありません');
-      if (!confirm(`${data.length}件を読み込み、いまの${all.length}件を置き換えます。よろしいですか？`)) return;
-      all = data.map(normalize);
-      await push();
-      loadToForm(blank());
-      $('editStatus').textContent = `読み込みました（${all.length}件）`;
+      const incoming = data.map(normalize);
+
+      if (mode === 'merge'){
+        let added = 0, updated = 0;
+        incoming.forEach(s2 => {
+          const i = all.findIndex(x => x.id === s2.id);
+          if (i >= 0){ all[i] = s2; updated++; }
+          else { all.push(s2); added++; }
+        });
+        if (!confirm(`新しく${added}件を追加し、${updated}件を上書きします。よろしいですか？`)){
+          await load();
+          return;
+        }
+        await push();
+        loadToForm(blank());
+        $('editStatus').textContent = `追加${added}件 / 上書き${updated}件（合計${all.length}件）`;
+      } else {
+        if (!confirm(`${incoming.length}件を読み込み、いまの${all.length}件をすべて置き換えます。よろしいですか？`)) return;
+        all = incoming;
+        await push();
+        loadToForm(blank());
+        $('editStatus').textContent = `入れ替えました（${all.length}件）`;
+      }
     } catch (err){
       $('editStatus').textContent = '読み込めませんでした：' + err.message;
     }
@@ -849,7 +872,7 @@ $('importFile').onchange = e => {
 
 function normalize(s){
   const o = Object.assign(blank(), s, {
-    id: s.id || ('streamer_' + Math.random().toString(36).slice(2)),
+    id: s.id || ('streamer_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8)),
     yomi: toKatakana(s.yomi || '')
   });
   if (!Array.isArray(o.timeline)) o.timeline = [];
