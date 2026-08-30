@@ -163,6 +163,27 @@ button.rose:hover{background:var(--rose);color:#fff}
 }
 .presets button:last-child{border-right:none}
 .presets button:hover{background:var(--amber);color:var(--ink)}
+.transport{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:9px}
+.transport button{
+  background:none;border:1px solid var(--rule-2);color:var(--bone);
+  padding:11px 0;cursor:pointer;font-family:var(--mono);font-size:12px
+}
+.transport button:hover{border-color:var(--amber);color:var(--amber)}
+.transport button.main{border-color:var(--amber);color:var(--amber);font-weight:700}
+.transport button.main:hover{background:var(--amber);color:var(--ink)}
+.transport button:disabled{opacity:.35;cursor:not-allowed}
+.seek-row{display:flex;align-items:center;gap:9px;margin-top:10px}
+.seek-row input[type=range]{flex:1;accent-color:var(--amber)}
+.tcode{font-family:var(--mono);font-size:11px;color:var(--dim);min-width:44px;text-align:center}
+.tcode.now{color:var(--amber)}
+.rate-row{display:flex;gap:0;margin-top:9px;border:1px solid var(--rule-2)}
+.rate-row button{
+  flex:1;background:none;border:none;border-right:1px solid var(--rule);
+  color:var(--dim);padding:7px 0;cursor:pointer;font-family:var(--mono);font-size:11px
+}
+.rate-row button:last-child{border-right:none}
+.rate-row button:hover{background:var(--amber);color:var(--ink)}
+.rate-row button.on{background:var(--amber);color:var(--ink)}
 
 .clip-list{border:1px solid var(--rule-2);background:var(--slab);margin-top:8px;max-height:320px;overflow-y:auto;position:relative}
 .clip{display:flex;gap:10px;align-items:center;padding:8px;border-bottom:1px solid var(--rule)}
@@ -247,7 +268,30 @@ button.rose:hover{background:var(--rose);color:#fff}
   <input type="text" class="copybox" id="copybox" readonly>
 
   <div class="box amber" id="volBox" style="display:none">
-    <div class="box-label">動画の音量</div>
+    <div class="box-label">再生コントロール</div>
+
+    <div class="transport">
+      <button id="tp-restart" title="頭出し">⏮</button>
+      <button id="tp-back30" title="30秒戻す">⏪30</button>
+      <button id="tp-toggle" class="main" title="再生 / 一時停止">▶</button>
+      <button id="tp-fwd10" title="10秒進める">10⏩</button>
+      <button id="tp-fwd30" title="30秒進める">30⏩</button>
+    </div>
+
+    <div class="seek-row">
+      <span class="tcode now" id="tNow">0:00</span>
+      <input type="range" id="s-seek" min="0" max="1000" step="1" value="0">
+      <span class="tcode" id="tDur">0:00</span>
+    </div>
+
+    <div class="rate-row" id="rateRow">
+      <button data-rate="0.5">0.5x</button>
+      <button data-rate="1" class="on">1x</button>
+      <button data-rate="1.5">1.5x</button>
+      <button data-rate="2">2x</button>
+    </div>
+
+    <div class="box-label" style="margin-top:14px">音量</div>
     <div class="slider-row">
       <input type="range" id="s-vol" min="0" max="100" step="1" value="60">
       <span class="val" id="v-vol">60%</span>
@@ -413,6 +457,7 @@ function connect(){
     const m = JSON.parse(e.data);
     if (m.type === 'ack' && m.settings) applySettingsUI(m.settings);
     if (m.type === 'dataUpdated') load();
+    if (m.type === 'videoState') applyVideoState(m);
   };
   ws.onclose = () => { $('status').textContent = '切断されました。再接続しています…'; setTimeout(connect, 3000); };
   ws.onerror = () => { $('status').textContent = '接続に失敗しました'; };
@@ -611,6 +656,65 @@ function sendVolume(){
   send({type:'setVolume', volume:v});
 }
 $('s-vol').oninput = sendVolume;
+
+/* ── 再生コントロール ── */
+let vidDur = 0, seeking = false, controllable = false;
+
+function fmt(sec){
+  sec = Math.max(0, Math.floor(sec || 0));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s2 = sec % 60;
+  return h ? `${h}:${String(m).padStart(2,'0')}:${String(s2).padStart(2,'0')}`
+           : `${m}:${String(s2).padStart(2,'0')}`;
+}
+
+function vcmd(action, value){ send({ type:'videoCmd', action, value }); }
+
+$('tp-toggle').onclick  = () => vcmd('toggle');
+$('tp-restart').onclick = () => vcmd('restart');
+$('tp-back30').onclick  = () => vcmd('seek', -30);
+$('tp-fwd10').onclick   = () => vcmd('seek', 10);
+$('tp-fwd30').onclick   = () => vcmd('seek', 30);
+
+document.querySelectorAll('#rateRow button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#rateRow button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    vcmd('rate', +b.dataset.rate);
+  };
+});
+
+$('s-seek').oninput = () => {
+  seeking = true;
+  if (vidDur > 0) $('tNow').textContent = fmt(vidDur * (+$('s-seek').value / 1000));
+};
+$('s-seek').onchange = () => {
+  if (vidDur > 0) vcmd('seekTo', vidDur * (+$('s-seek').value / 1000));
+  setTimeout(() => { seeking = false; }, 400);
+};
+
+function applyVideoState(m){
+  controllable = !!m.controllable;
+  ['tp-toggle','tp-restart','tp-back30','tp-fwd10','tp-fwd30','s-seek'].forEach(id => {
+    $(id).disabled = !controllable;
+  });
+  document.querySelectorAll('#rateRow button').forEach(b => b.disabled = !controllable);
+
+  $('tp-toggle').textContent = m.playing ? '⏸' : '▶';
+
+  if (!controllable){
+    $('tNow').textContent = '—';
+    $('tDur').textContent = '—';
+    return;
+  }
+  vidDur = m.duration || 0;
+  $('tDur').textContent = fmt(vidDur);
+  if (!seeking){
+    $('tNow').textContent = fmt(m.time);
+    $('s-seek').value = vidDur > 0 ? Math.round((m.time / vidDur) * 1000) : 0;
+  }
+}
 document.querySelectorAll('.presets button[data-vol]').forEach(b => {
   b.onclick = () => { $('s-vol').value = b.dataset.vol; sendVolume(); };
 });
