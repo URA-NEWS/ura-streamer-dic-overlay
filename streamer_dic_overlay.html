@@ -300,9 +300,49 @@ function connect(){
     if (m.type === 'playVideo') playVideo(m.url, m.title);
     if (m.type === 'stopVideo') stopVideo();
     if (m.type === 'setVolume') setVolume(m.volume);
+    if (m.type === 'videoCmd') videoCmd(m.action, m.value);
   };
   ws.onclose = () => setTimeout(connect, 3000);
 }
+
+/* ドックからの再生操作。YouTubeのときだけ効く */
+function videoCmd(action, value){
+  if (!ytPlayer || !ytPlayer.getPlayerState) return;
+  try {
+    if (action === 'toggle'){
+      const st = ytPlayer.getPlayerState();
+      if (st === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+      else ytPlayer.playVideo();
+    }
+    else if (action === 'play')    ytPlayer.playVideo();
+    else if (action === 'pause')   ytPlayer.pauseVideo();
+    else if (action === 'restart'){ ytPlayer.seekTo(0, true); ytPlayer.playVideo(); }
+    else if (action === 'seek')    ytPlayer.seekTo(Math.max(0, ytPlayer.getCurrentTime() + (+value || 0)), true);
+    else if (action === 'seekTo')  ytPlayer.seekTo(Math.max(0, +value || 0), true);
+    else if (action === 'rate')    ytPlayer.setPlaybackRate(+value || 1);
+  } catch {}
+  reportState();
+}
+
+/* 再生位置をドックへ知らせる */
+function reportState(){
+  if (!ws || ws.readyState !== 1) return;
+  let playing = false, time = 0, duration = 0;
+  const controllable = !!(ytPlayer && ytPlayer.getPlayerState);
+  if (controllable){
+    try {
+      playing  = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+      time     = ytPlayer.getCurrentTime() || 0;
+      duration = ytPlayer.getDuration() || 0;
+    } catch {}
+  }
+  ws.send(JSON.stringify({
+    type:'videoState',
+    playing, time, duration,
+    controllable: controllable && player.classList.contains('on')
+  }));
+}
+setInterval(reportState, 700);
 
 function setVolume(v){
   cur.volume = v;
