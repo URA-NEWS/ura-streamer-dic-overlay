@@ -164,7 +164,7 @@ button.rose:hover{background:var(--rose);color:#fff}
 .presets button:last-child{border-right:none}
 .presets button:hover{background:var(--amber);color:var(--ink)}
 
-.clip-list{border:1px solid var(--rule-2);background:var(--slab);margin-top:8px;max-height:250px;overflow-y:auto}
+.clip-list{border:1px solid var(--rule-2);background:var(--slab);margin-top:8px;max-height:320px;overflow-y:auto;position:relative}
 .clip{display:flex;gap:10px;align-items:center;padding:8px;border-bottom:1px solid var(--rule)}
 .clip:last-child{border-bottom:none}
 .clip.play{cursor:pointer}
@@ -180,6 +180,15 @@ button.rose:hover{background:var(--rose);color:#fff}
 .clip-src{
   font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--amber);margin-bottom:3px
 }
+.clip-group{
+  position:sticky;top:0;z-index:2;
+  display:flex;align-items:center;gap:9px;
+  background:var(--slab-2);border-bottom:1px solid var(--rule-2);
+  padding:6px 9px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--amber)
+}
+.clip-group .bar{flex:1;height:1px;background:var(--rule)}
+.clip-group .n{color:var(--dim);letter-spacing:.12em}
 .clip-u{
   font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:4px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis
@@ -521,14 +530,30 @@ function fallbackCopy(text, done){
 }
 
 /* 代表的配信 ＋ 年表のURL をまとめて一覧に */
+function yearOf(d){
+  const m = String(d || '').match(/(19|20)\d{2}/);
+  return m ? m[0] : '';
+}
+function dateKey(d){
+  const str = String(d || '');
+  const y = str.match(/(19|20)\d{2}/);
+  const rest = y ? str.slice(str.indexOf(y[0]) + 4) : str;
+  const mo = rest.match(/\d{1,2}/);
+  return (y ? +y[0] : 9999) * 100 + (mo ? +mo[0] : 0);
+}
+
 function renderClipList(s){
-  const items = [];
-  (s.videos || []).forEach(v => {
-    if (v.title || v.url) items.push({ src:'代表的配信', title:v.title, url:v.url });
-  });
-  (s.timeline || []).forEach(e => {
-    if (e.url) items.push({ src: e.date || '年表', title: e.title || e.url, url: e.url });
-  });
+  // 年表のURLを年月順に並べ、そのあとに代表的配信を置く
+  const tl = (s.timeline || [])
+    .filter(e => e.url)
+    .map(e => ({ group: yearOf(e.date) || '年月なし', date: e.date || '', title: e.title || e.url, url: e.url, k: dateKey(e.date) }))
+    .sort((a,b) => a.k - b.k);
+
+  const clips = (s.videos || [])
+    .filter(v => v.title || v.url)
+    .map(v => ({ group:'代表的配信', date:'', title:v.title, url:v.url }));
+
+  const items = tl.concat(clips);
 
   const L = $('clipList');
   if (!items.length){
@@ -544,18 +569,29 @@ function renderClipList(s){
   $('volBox').style.display = items.some(v => playable(v.url)) ? '' : 'none';
   L.innerHTML = '';
 
+  let lastGroup = null;
   items.forEach(v => {
+    if (v.group !== lastGroup){
+      lastGroup = v.group;
+      const n = items.filter(x => x.group === v.group).length;
+      const g = document.createElement('div');
+      g.className = 'clip-group';
+      g.innerHTML = `<span>${v.group}</span><span class="bar"></span><span class="n">${n}</span>`;
+      L.appendChild(g);
+    }
+
+    const label = v.date || v.group;
     const d = document.createElement('div');
     if (playable(v.url)){
       const th = thumbUrl(v.url);
       d.className = 'clip play';
       d.innerHTML = (th ? `<img src="${th}" alt="">` : `<div class="th">▶</div>`)
-        + `<div class="clip-body"><div class="clip-src">${v.src}</div><div class="clip-t">${v.title || v.url}</div></div>`;
+        + `<div class="clip-body"><div class="clip-src">${label}</div><div class="clip-t">${v.title || v.url}</div></div>`;
       d.onclick = () => send({ type:'playVideo', url:v.url, title:v.title });
     } else {
       d.className = 'clip';
       d.innerHTML = (isX(v.url) ? `<div class="th x">𝕏</div>` : `<div class="th">🔗</div>`)
-        + `<div class="clip-body"><div class="clip-src">${v.src}</div>`
+        + `<div class="clip-body"><div class="clip-src">${label}</div>`
         + `<div class="clip-t">${v.title || '(無題)'}</div><div class="clip-u">${v.url || ''}</div></div>`;
       if (v.url){
         const b = document.createElement('button');
@@ -837,8 +873,10 @@ $('importFile').onchange = e => {
   const rd = new FileReader();
   rd.onload = async ev => {
     try {
-      const data = JSON.parse(ev.target.result);
-      if (!Array.isArray(data)) throw new Error('配列形式のJSONではありません');
+      let data = JSON.parse(ev.target.result);
+      // 配信者1人ぶんのオブジェクトが来た場合は自動で配列に包む
+      if (data && !Array.isArray(data) && typeof data === 'object') data = [data];
+      if (!Array.isArray(data)) throw new Error('配信者データのJSONとして読み取れません');
       const incoming = data.map(normalize);
 
       if (mode === 'merge'){
@@ -870,7 +908,14 @@ $('importFile').onchange = e => {
   e.target.value = '';
 };
 
+function isWebUrl(u){ return typeof u === 'string' && /^(https?:|data:)/.test(u); }
+
 function normalize(s){
+  // PC内のファイルパスは配信画面から読めないので落とす
+  if (s && s.photoUrl && !isWebUrl(s.photoUrl)) s.photoUrl = '';
+  if (s && Array.isArray(s.timeline)){
+    s.timeline.forEach(t => { if (t && t.imageUrl && !isWebUrl(t.imageUrl)) t.imageUrl = ''; });
+  }
   const o = Object.assign(blank(), s, {
     id: s.id || ('streamer_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8)),
     yomi: toKatakana(s.yomi || '')
