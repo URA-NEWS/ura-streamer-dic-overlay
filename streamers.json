@@ -1,386 +1,574 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const WebSocket = require('ws');
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>配信者図鑑 Overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bone:#ECE4D4;
+  --bone-dim:#A9A294;
+  --amber:#E8A33D;
+  --jade:#5AD1A8;
+  --rule:rgba(236,228,212,.16);
+  --rule-strong:rgba(236,228,212,.34);
+  --w:640px; --fs:1;
 
-const PORT = process.env.PORT || 3942;
+  --disp:'Zen Old Mincho', serif;
+  --body:'Zen Kaku Gothic New', sans-serif;
+  --mono:'Roboto Mono', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1280px;height:720px;background:transparent;overflow:hidden;font-family:var(--body)}
 
-/* ───── Supabase 設定 ─────
-   SUPABASE_URL              例: https://xxxxxxxx.supabase.co
-   SUPABASE_SERVICE_ROLE_KEY サービスロールキー（サーバー専用・公開禁止）
-   未設定ならローカルファイルに保存する（開発用フォールバック）        */
-const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
-const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
-const SB_TABLE = process.env.SUPABASE_TABLE || 'streamer_dic';
-const USE_SB = !!(SB_URL && SB_KEY);
-
-const LOCAL_DIR = process.env.DATA_DIR || __dirname;
-const localStreamersPath = path.join(LOCAL_DIR, 'streamers.json');
-const localSettingsPath  = path.join(LOCAL_DIR, 'settings.json');
-
-let streamersData = [];
-let overlaySettings = { width: 640, bgOpacity: 0.9, bgLevel: 8, fontScale: 1, volume: 60 };
-let connectedClients = { dock: new Set(), overlay: new Set() };
-let lastError = '';
-
-/* ───── Supabase REST ───── */
-function sbHeaders(extra) {
-  return Object.assign({
-    'apikey': SB_KEY,
-    'Authorization': 'Bearer ' + SB_KEY,
-    'Content-Type': 'application/json'
-  }, extra || {});
+.wrap{
+  position:fixed;top:0;right:0;width:var(--w);height:720px;
+  background:rgba(11,14,20,.9);
+  transform:translateX(100%);
+  transition:transform .55s cubic-bezier(.16,1,.3,1), width .2s ease, background-color .12s linear;
+  display:flex;flex-direction:column;
+  z-index:9999;
+  color:var(--bone);
+}
+.wrap.on{transform:translateX(0)}
+.wrap::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:1px;
+  background:linear-gradient(180deg,var(--amber) 0,var(--amber) 96px,var(--rule-strong) 96px,var(--rule) 100%);
 }
 
-async function sbGet(key) {
-  const url = `${SB_URL}/rest/v1/${SB_TABLE}?key=eq.${encodeURIComponent(key)}&select=data`;
-  const r = await fetch(url, { headers: sbHeaders() });
-  if (!r.ok) throw new Error(`GET ${key} ${r.status} ${await r.text()}`);
-  const rows = await r.json();
-  return rows.length ? rows[0].data : null;
+.hd{flex-shrink:0;padding:20px 26px 14px 30px;border-bottom:1px solid var(--rule)}
+.eyebrow{
+  font-family:var(--mono);font-size:calc(12px * var(--fs));letter-spacing:.34em;
+  color:var(--amber);display:flex;gap:12px;align-items:center
+}
+.eyebrow .no{color:var(--bone-dim);letter-spacing:.18em}
+.eyebrow .bar{flex:1;height:1px;background:var(--rule-strong)}
+
+.bd{flex:1;overflow-y:auto;padding:24px 26px 44px 30px;scroll-behavior:smooth}
+.bd::-webkit-scrollbar{width:6px}
+.bd::-webkit-scrollbar-track{background:rgba(0,0,0,.35)}
+.bd::-webkit-scrollbar-thumb{background:var(--rule-strong)}
+
+.reveal{opacity:0;transform:translateY(14px);animation:rise .5s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .reveal{animation:none;opacity:1;transform:none}
+  .wrap{transition:none}
 }
 
-async function sbPut(key, data) {
-  const url = `${SB_URL}/rest/v1/${SB_TABLE}`;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: sbHeaders({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
-    body: JSON.stringify([{ key, data, updated_at: new Date().toISOString() }])
+.head{display:flex;gap:24px;align-items:flex-start;margin-bottom:26px}
+.plate{position:relative;flex-shrink:0;width:calc(148px * var(--fs))}
+.plate-img{
+  width:100%;aspect-ratio:1/1;object-fit:cover;display:block;
+  background:#181D28;filter:saturate(.92) contrast(1.04)
+}
+.plate-img.no{
+  display:flex;align-items:center;justify-content:center;
+  color:var(--bone-dim);font-family:var(--mono);font-size:calc(11px * var(--fs));letter-spacing:.2em
+}
+.plate::after{
+  content:'';position:absolute;inset:-7px;pointer-events:none;
+  border:1px solid var(--rule-strong);
+  clip-path:polygon(0 0,26px 0,26px 1px,1px 1px,1px 26px,0 26px,
+    0 100%,26px 100%,26px calc(100% - 1px),1px calc(100% - 1px),1px calc(100% - 26px),0 calc(100% - 26px),
+    100% 100%,calc(100% - 26px) 100%,calc(100% - 26px) calc(100% - 1px),calc(100% - 1px) calc(100% - 1px),calc(100% - 1px) calc(100% - 26px),100% calc(100% - 26px),
+    100% 0,calc(100% - 26px) 0,calc(100% - 26px) 1px,calc(100% - 1px) 1px,calc(100% - 1px) 26px,100% 26px)
+}
+.plate-cap{
+  font-family:var(--mono);font-size:calc(10px * var(--fs));letter-spacing:.2em;
+  color:var(--bone-dim);margin-top:12px
+}
+.title{flex:1;min-width:0;padding-top:2px}
+.name{
+  font-family:var(--disp);font-weight:900;
+  font-size:calc(44px * var(--fs));line-height:1.1;
+  color:var(--bone);word-break:break-word
+}
+.yomi{
+  font-family:var(--mono);font-size:calc(14px * var(--fs));letter-spacing:.3em;
+  color:var(--bone-dim);margin-top:12px
+}
+.name-rule{height:2px;background:var(--amber);width:52px;margin-top:16px}
+
+.sec{margin-top:34px}
+.lbl{
+  display:flex;align-items:center;gap:12px;margin-bottom:16px;
+  font-family:var(--mono);font-size:calc(12px * var(--fs));letter-spacing:.3em;color:var(--amber)
+}
+.lbl .sq{width:7px;height:7px;background:var(--amber);flex-shrink:0}
+.lbl .bar{flex:1;height:1px;background:var(--rule)}
+.lbl .count{color:var(--bone-dim);letter-spacing:.16em}
+
+.spec{display:flex;flex-direction:column}
+.spec-row{display:flex;gap:14px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--rule)}
+.spec-row:first-child{border-top:1px solid var(--rule)}
+.spec-row dt{
+  font-family:var(--mono);font-size:calc(13px * var(--fs));letter-spacing:.12em;
+  color:var(--bone-dim);width:calc(112px * var(--fs));flex-shrink:0
+}
+.spec-row dd{
+  font-size:calc(20px * var(--fs));font-weight:500;line-height:1.55;
+  white-space:pre-wrap;word-break:break-word;flex:1
+}
+
+.intro{
+  font-size:calc(20px * var(--fs));line-height:1.9;font-weight:500;
+  white-space:pre-wrap;word-break:break-word;
+  padding-left:18px;border-left:2px solid var(--rule-strong)
+}
+
+.era{position:relative;margin-bottom:8px}
+.era-year{
+  position:sticky;top:-1px;z-index:5;
+  display:flex;align-items:center;gap:12px;
+  background:var(--panel-bg,rgba(11,14,20,.92));
+  padding:8px 0 6px;margin-bottom:-2px
+}
+.era-year b{
+  font-family:var(--mono);font-weight:700;
+  font-size:calc(40px * var(--fs));line-height:1;letter-spacing:-.02em;
+  color:transparent;-webkit-text-stroke:1px var(--amber)
+}
+.era-year i{flex:1;height:1px;background:var(--rule);font-style:normal}
+.tl{position:relative;padding-left:26px}
+.tl::before{content:'';position:absolute;left:3px;top:10px;bottom:6px;width:1px;background:var(--rule-strong)}
+.tl-item{position:relative;padding:16px 0 22px}
+.tl-item::before{
+  content:'';position:absolute;left:-26px;top:24px;
+  width:7px;height:7px;background:var(--amber);transform:rotate(45deg)
+}
+.tl-date{font-family:var(--mono);font-size:calc(13px * var(--fs));font-weight:500;letter-spacing:.2em;color:var(--amber)}
+.tl-title{
+  font-family:var(--disp);font-weight:700;
+  font-size:calc(25px * var(--fs));line-height:1.4;margin-top:6px;
+  white-space:pre-wrap;word-break:break-word
+}
+.tl-text{
+  font-size:calc(18px * var(--fs));line-height:1.8;color:#D6CFC0;margin-top:8px;
+  white-space:pre-wrap;word-break:break-word
+}
+.tl-fig{margin-top:14px;display:inline-block;max-width:100%}
+.tl-fig img{display:block;max-width:100%;max-height:calc(280px * var(--fs));border:1px solid var(--rule-strong)}
+.tl-fig figcaption{
+  font-family:var(--mono);font-size:calc(11px * var(--fs));letter-spacing:.18em;
+  color:var(--bone-dim);margin-top:8px
+}
+.tl-thumb{
+  margin-top:14px;display:inline-block;position:relative;max-width:100%;
+  border:1px solid var(--rule-strong);line-height:0
+}
+.tl-thumb img{display:block;max-width:100%;max-height:calc(240px * var(--fs))}
+.tl-thumb::after{
+  content:'';position:absolute;left:50%;top:50%;
+  width:calc(46px * var(--fs));height:calc(46px * var(--fs));
+  transform:translate(-50%,-50%);
+  background:rgba(11,14,20,.72);border:2px solid var(--amber);border-radius:50%
+}
+.tl-thumb::before{
+  content:'';position:absolute;left:50%;top:50%;z-index:1;
+  transform:translate(-38%,-50%);
+  border-style:solid;border-width:calc(9px * var(--fs)) 0 calc(9px * var(--fs)) calc(15px * var(--fs));
+  border-color:transparent transparent transparent var(--amber)
+}
+.tl-thumb figcaption{
+  position:absolute;left:0;right:0;bottom:0;z-index:2;
+  background:linear-gradient(180deg,rgba(11,14,20,0),rgba(11,14,20,.92));
+  padding:22px 12px 9px;
+  font-family:var(--mono);font-size:calc(11px * var(--fs));letter-spacing:.16em;
+  color:var(--bone);line-height:1.4
+}
+.tl-url{
+  display:inline-block;margin-top:12px;padding:8px 14px;border:1px solid var(--rule-strong);
+  font-family:var(--mono);font-size:calc(13px * var(--fs));
+  color:var(--jade);word-break:break-all;line-height:1.5;max-width:100%
+}
+.tl-url .k{color:var(--bone-dim);letter-spacing:.2em;margin-right:10px}
+
+.sites{display:flex;flex-wrap:wrap;gap:10px}
+.site{display:flex;align-items:baseline;gap:10px;padding:9px 15px;border:1px solid var(--rule-strong);background:rgba(0,0,0,.28)}
+.site b{font-weight:700;font-size:calc(17px * var(--fs))}
+.site span{font-family:var(--mono);font-size:calc(15px * var(--fs));color:var(--jade)}
+
+.clips{display:flex;flex-direction:column;gap:14px}
+.clip{padding-left:16px;border-left:2px solid var(--amber)}
+.clip-t{font-size:calc(20px * var(--fs));font-weight:700;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.clip-u{font-family:var(--mono);font-size:calc(13px * var(--fs));color:var(--jade);margin-top:6px;word-break:break-all;line-height:1.5}
+
+.player{
+  position:fixed;inset:0;background:rgba(11,14,20,.96);z-index:10000;
+  display:none;flex-direction:column;align-items:center;justify-content:center;padding:34px
+}
+.player.on{display:flex}
+.player-bar{width:1120px;display:flex;align-items:baseline;gap:16px;margin-bottom:14px}
+.player-bar .tag{font-family:var(--mono);font-size:12px;letter-spacing:.3em;color:var(--amber);flex-shrink:0}
+.player-bar .t{font-family:var(--disp);font-weight:700;font-size:24px;line-height:1.3;color:var(--bone);flex:1;min-width:0}
+.stage{width:1120px;height:630px;background:#000;overflow:hidden;position:relative;border:1px solid var(--rule-strong)}
+.stage > *{width:100%;height:100%;border:none;display:block}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="wrap">
+  <div class="hd">
+    <div class="eyebrow">
+      <span>STREAMER ARCHIVE</span>
+      <span class="bar"></span>
+      <span class="no" id="entryNo">No.—</span>
+    </div>
+  </div>
+  <div class="bd" id="bd"></div>
+</div>
+
+<div class="player" id="player">
+  <div class="player-bar">
+    <span class="tag">NOW PLAYING</span>
+    <span class="t" id="playerTitle"></span>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<script>
+const wrap = document.getElementById('wrap');
+const bd = document.getElementById('bd');
+const player = document.getElementById('player');
+const playerTitle = document.getElementById('playerTitle');
+const stage = document.getElementById('stage');
+const entryNo = document.getElementById('entryNo');
+
+let ws = null;
+let cur = { width:640, bgOpacity:0.9, bgLevel:8, fontScale:1, volume:60 };
+let ytApiReady = false, ytPlayer = null, pending = null;
+
+(function(){
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+})();
+
+window.onYouTubeIframeAPIReady = function(){
+  ytApiReady = true;
+  if (pending){ const p = pending; pending = null; startYT(p.id); }
+};
+
+function clearStage(){
+  if (ytPlayer){ try { ytPlayer.destroy(); } catch {} ytPlayer = null; }
+  stage.innerHTML = '';
+}
+
+function killCaptions(p){
+  try { p.unloadModule('captions'); } catch {}
+  try { p.unloadModule('cc'); } catch {}
+  try { p.setOption('captions', 'track', {}); } catch {}
+}
+
+function startYT(videoId){
+  if (!ytApiReady){ pending = { id: videoId }; return; }
+  clearStage();
+  const host = document.createElement('div');
+  host.id = 'ytHost_' + Date.now();
+  stage.appendChild(host);
+  ytPlayer = new YT.Player(host.id, {
+    height:'630', width:'1120', videoId: videoId,
+    playerVars:{
+      autoplay:1, rel:0, modestbranding:1, playsinline:1, enablejsapi:1,
+      cc_load_policy:0, iv_load_policy:3, hl:'ja', origin: location.origin
+    },
+    events:{
+      onReady: e => {
+        try { e.target.setVolume(cur.volume); killCaptions(e.target); e.target.playVideo(); } catch {}
+        setTimeout(() => killCaptions(e.target), 800);
+        setTimeout(() => killCaptions(e.target), 2500);
+      },
+      onStateChange: e => {
+        if (e.data === YT.PlayerState.PLAYING) killCaptions(e.target);
+        reportState();
+      }
+    }
   });
-  if (!r.ok) throw new Error(`PUT ${key} ${r.status} ${await r.text()}`);
-  return true;
 }
 
-/* ───── ローカル保存（フォールバック） ───── */
-function localRead(p, fallback) {
+function connect(){
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(proto + '//' + location.host);
+  ws.onopen = () => ws.send(JSON.stringify({type:'init', clientType:'overlay'}));
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.type === 'ack' && m.settings) applySettings(m.settings);
+    if (m.type === 'settings') applySettings(m.settings);
+    if (m.type === 'showStreamer') { stopVideo(); show(m.streamer, m.index); }
+    if (m.type === 'hideOverlay') { stopVideo(); wrap.classList.remove('on'); }
+    if (m.type === 'scroll') doScroll(m.dir);
+    if (m.type === 'playVideo') playVideo(m.url, m.title);
+    if (m.type === 'stopVideo') stopVideo();
+    if (m.type === 'setVolume') setVolume(m.volume);
+    if (m.type === 'videoCmd') videoCmd(m.action, m.value);
+  };
+  ws.onclose = () => setTimeout(connect, 3000);
+}
+
+/* ドックからの再生操作。YouTubeのときだけ効く */
+function videoCmd(action, value){
+  if (!ytPlayer || !ytPlayer.getPlayerState) return;
   try {
-    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf-8'));
-  } catch (err) { console.error('local read failed:', err.message); }
-  return fallback;
+    if (action === 'toggle'){
+      const st = ytPlayer.getPlayerState();
+      if (st === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+      else ytPlayer.playVideo();
+    }
+    else if (action === 'play')    ytPlayer.playVideo();
+    else if (action === 'pause')   ytPlayer.pauseVideo();
+    else if (action === 'restart'){ ytPlayer.seekTo(0, true); ytPlayer.playVideo(); }
+    else if (action === 'seek')    ytPlayer.seekTo(Math.max(0, ytPlayer.getCurrentTime() + (+value || 0)), true);
+    else if (action === 'seekTo')  ytPlayer.seekTo(Math.max(0, +value || 0), true);
+    else if (action === 'rate')    ytPlayer.setPlaybackRate(+value || 1);
+  } catch {}
+  reportState();
 }
 
-function localWrite(p, data) {
-  try {
-    const tmp = p + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8');
-    fs.renameSync(tmp, p);
-    return true;
-  } catch (err) {
-    console.error('local write failed:', err.message);
-    return false;
-  }
-}
-
-/* ───── 読み込み ───── */
-async function loadAll() {
-  if (USE_SB) {
+/* 再生位置をドックへ知らせる */
+function reportState(){
+  if (!ws || ws.readyState !== 1) return;
+  let playing = false, time = 0, duration = 0;
+  const controllable = !!(ytPlayer && ytPlayer.getPlayerState);
+  if (controllable){
     try {
-      const s = await sbGet('streamers');
-      if (Array.isArray(s)) {
-        streamersData = s;
-        console.log(`Supabase: loaded ${s.length} streamers`);
+      playing  = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+      time     = ytPlayer.getCurrentTime() || 0;
+      duration = ytPlayer.getDuration() || 0;
+    } catch {}
+  }
+  ws.send(JSON.stringify({
+    type:'videoState',
+    playing, time, duration,
+    controllable: controllable && player.classList.contains('on')
+  }));
+}
+setInterval(reportState, 700);
+
+function setVolume(v){
+  cur.volume = v;
+  if (ytPlayer && ytPlayer.setVolume){ try { ytPlayer.setVolume(v); } catch {} }
+}
+
+function isX(u){
+  try {
+    const h = new URL(u).hostname.replace('www.','');
+    return h === 'x.com' || h === 'twitter.com' || h === 'mobile.twitter.com';
+  } catch { return false; }
+}
+
+function ytVideoId(u){
+  try {
+    const url = new URL(u);
+    const h = url.hostname.replace('www.','');
+    if (h === 'youtube.com' || h === 'm.youtube.com'){
+      const v = url.searchParams.get('v');
+      if (v) return v;
+      const p = url.pathname.split('/').filter(Boolean);
+      if (p[0] === 'live' || p[0] === 'shorts' || p[0] === 'embed') return p[1] || '';
+    }
+    if (h === 'youtu.be') return url.pathname.slice(1);
+    return '';
+  } catch { return ''; }
+}
+
+function otherEmbed(u){
+  try {
+    const url = new URL(u);
+    const h = url.hostname.replace('www.','');
+    if (h === 'twitcasting.tv'){
+      const p = url.pathname.split('/').filter(Boolean);
+      if (p.length >= 3 && p[1] === 'movie') return `https://twitcasting.tv/${p[0]}/embeddedplayer/${p[2]}?auto_play=true`;
+    }
+    if (h === 'kick.com'){
+      const p = url.pathname.split('/').filter(Boolean);
+      if (p.length >= 3 && p[1] === 'videos') return `https://player.kick.com/video/${p[2]}?autoplay=true`;
+      if (p.length === 1) return `https://player.kick.com/${p[0]}?autoplay=true`;
+    }
+    return u;
+  } catch { return u; }
+}
+
+function playVideo(u, title){
+  if (!u || isX(u)) return;
+  playerTitle.textContent = title || '';
+  player.classList.add('on');
+  const vid = ytVideoId(u);
+  if (vid){ startYT(vid); setTimeout(reportState, 300); return; }
+  clearStage();
+  const f = document.createElement('iframe');
+  f.setAttribute('allow','autoplay; encrypted-media');
+  f.setAttribute('allowfullscreen','');
+  f.src = otherEmbed(u);
+  stage.appendChild(f);
+}
+
+function stopVideo(){
+  pending = null;
+  clearStage();
+  player.classList.remove('on');
+  reportState();
+}
+
+function doScroll(dir){
+  const step = Math.round(bd.clientHeight * 0.35);
+  if (dir === 'up') bd.scrollTop -= step;
+  else if (dir === 'down') bd.scrollTop += step;
+  else if (dir === 'top') bd.scrollTop = 0;
+  else if (dir === 'bottom') bd.scrollTop = bd.scrollHeight;
+}
+
+function applySettings(st){
+  if (!st) return;
+  cur = Object.assign(cur, st);
+  const r = document.documentElement.style;
+  r.setProperty('--w', cur.width + 'px');
+  r.setProperty('--fs', cur.fontScale);
+  const t = Math.max(0, Math.min(100, cur.bgLevel)) / 100;
+  const R = Math.round(8  + t * 62);
+  const G = Math.round(11 + t * 63);
+  const B = Math.round(18 + t * 66);
+  const a = Math.pow(Math.max(0, Math.min(1, cur.bgOpacity)), 0.45);
+  const bg = `rgba(${R},${G},${B},${a.toFixed(3)})`;
+  wrap.style.backgroundColor = bg;
+  // 年号の追従帯は本文が透けないよう、必ず不透明側に寄せる
+  r.setProperty('--panel-bg', `rgba(${R},${G},${B},${Math.max(a,0.88).toFixed(3)})`);
+  if (st.volume != null) setVolume(st.volume);
+}
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function yearOf(d){
+  const m = String(d || '').match(/(19|20)\d{2}/);
+  return m ? m[0] : '';
+}
+
+function sortTimeline(list){
+  const key = d => {
+    const s = String(d || '');
+    const y = s.match(/(19|20)\d{2}/);
+    const rest = y ? s.slice(s.indexOf(y[0]) + 4) : s;
+    const mo = rest.match(/\d{1,2}/);
+    return (y ? +y[0] : 9999) * 100 + (mo ? +mo[0] : 0);
+  };
+  return list.slice().sort((a,b) => key(a.date) - key(b.date));
+}
+
+function ytThumb(u){
+  const id = ytVideoId(u);
+  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : '';
+}
+
+let figNo = 0;
+function fig(src, cap){
+  if (!src) return '';
+  figNo++;
+  const n = String(figNo).padStart(2,'0');
+  return `<figure class="tl-fig"><img src="${esc(src)}" alt="">
+    <figcaption>図${n}${cap ? ' ─ ' + esc(cap) : ''}</figcaption></figure>`;
+}
+
+function show(s, index){
+  figNo = 0;
+  entryNo.textContent = 'No.' + String((index != null ? index : 0) + 1).padStart(3,'0');
+
+  let h = '';
+
+  h += '<div class="head reveal">';
+  h += '<div><div class="plate">' + (s.photoUrl
+      ? `<img class="plate-img" src="${esc(s.photoUrl)}" alt="">`
+      : `<div class="plate-img no">NO IMAGE</div>`)
+    + '</div><div class="plate-cap">PORTRAIT</div></div>';
+  h += '<div class="title">';
+  h += `<div class="name">${esc(s.name)}</div>`;
+  if (s.yomi) h += `<div class="yomi">${esc(s.yomi)}</div>`;
+  h += '<div class="name-rule"></div>';
+  h += '</div></div>';
+
+  const sites = (s.sites || []).filter(x => x.name || x.id);
+  if (sites.length){
+    h += '<div class="sec reveal" style="animation-delay:.04s"><div class="lbl"><span class="sq"></span><span>配信サイト</span><span class="bar"></span></div><div class="sites">';
+    sites.forEach(x => {
+      h += `<div class="site"><b>${esc(x.name)}</b><span>${esc(x.id)}</span></div>`;
+    });
+    h += '</div></div>';
+  }
+
+  const rows = [
+    ['活動期間', s.activePeriod],
+    ['配信スタイル', s.style],
+    ['生年月日 / 年齢', s.birth],
+    ['出身地', s.origin]
+  ].filter(x => x[1]);
+  if (rows.length){
+    h += '<div class="sec reveal" style="animation-delay:.06s"><div class="lbl"><span class="sq"></span><span>諸元</span><span class="bar"></span></div><dl class="spec">';
+    rows.forEach(([k,v]) => {
+      h += `<div class="spec-row"><dt>${k}</dt><dd>${esc(v)}</dd></div>`;
+    });
+    h += '</dl></div>';
+  }
+
+  if (s.intro){
+    h += '<div class="sec reveal" style="animation-delay:.1s"><div class="lbl"><span class="sq"></span><span>紹介</span><span class="bar"></span></div>'
+      + `<div class="intro">${esc(s.intro)}</div></div>`;
+  }
+
+  const tl = (s.timeline || []).filter(x => x.date || x.title || x.text || x.imageUrl || x.url);
+  if (tl.length){
+    h += `<div class="sec reveal" style="animation-delay:.14s"><div class="lbl"><span class="sq"></span><span>年表</span><span class="bar"></span><span class="count">${tl.length} ENTRIES</span></div>`;
+    const sorted = sortTimeline(tl);
+    let lastYear = null;
+    sorted.forEach(e => {
+      const y = yearOf(e.date);
+      if (lastYear === null){
+        h += '<div class="era">' + (y ? `<div class="era-year"><b>${y}</b><i></i></div>` : '') + '<div class="tl">';
+        lastYear = y;
+      } else if (y && y !== lastYear){
+        h += '</div></div>';
+        h += `<div class="era"><div class="era-year"><b>${y}</b><i></i></div><div class="tl">`;
+        lastYear = y;
+      }
+      h += '<div class="tl-item">';
+      if (e.date)  h += `<div class="tl-date">${esc(e.date)}</div>`;
+      if (e.title) h += `<div class="tl-title">${esc(e.title)}</div>`;
+      if (e.text)  h += `<div class="tl-text">${esc(e.text)}</div>`;
+      if (e.imageUrl){
+        h += fig(e.imageUrl, e.date || '');
       } else {
-        // 初回のみ、リポジトリ同梱の streamers.json を移行
-        const seed = localRead(path.join(__dirname, 'streamers.json'), null);
-        streamersData = Array.isArray(seed) ? seed : [];
-        if (streamersData.length) {
-          await sbPut('streamers', streamersData);
-          console.log(`Supabase: seeded ${streamersData.length} streamers`);
-        } else {
-          await sbPut('streamers', []);
-          console.log('Supabase: initialized empty streamers');
-        }
+        const th = ytThumb(e.url);
+        if (th) h += `<figure class="tl-thumb"><img src="${esc(th)}" alt="">
+          <figcaption>YOUTUBE</figcaption></figure>`;
       }
-
-      const st = await sbGet('settings');
-      if (st && typeof st === 'object') overlaySettings = Object.assign(overlaySettings, st);
-      lastError = '';
-    } catch (err) {
-      lastError = err.message;
-      console.error('Supabase load failed:', err.message);
-      streamersData = localRead(localStreamersPath, []);
-    }
-  } else {
-    streamersData = localRead(localStreamersPath, localRead(path.join(__dirname, 'streamers.json'), []));
-    overlaySettings = Object.assign(overlaySettings, localRead(localSettingsPath, {}));
-    console.log(`Local: loaded ${streamersData.length} streamers`);
-  }
-}
-
-/* ───── 保存 ───── */
-async function saveStreamers() {
-  if (USE_SB) {
-    try {
-      await sbPut('streamers', streamersData);
-      lastError = '';
-      return true;
-    } catch (err) {
-      lastError = err.message;
-      console.error('Supabase save failed:', err.message);
-      return false;
-    }
-  }
-  return localWrite(localStreamersPath, streamersData);
-}
-
-let settingsTimer = null;
-function saveSettingsSoon() {
-  clearTimeout(settingsTimer);
-  settingsTimer = setTimeout(async () => {
-    if (USE_SB) {
-      try { await sbPut('settings', overlaySettings); }
-      catch (err) { console.error('Supabase settings save failed:', err.message); }
-    } else {
-      localWrite(localSettingsPath, overlaySettings);
-    }
-  }, 1500);
-}
-
-/* ───── HTTP ───── */
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk;
-      if (body.length > 80 * 1024 * 1024) { req.destroy(); reject(new Error('too large')); }
+      if (e.url)   h += `<div class="tl-url"><span class="k">LINK</span>${esc(e.url)}</div>`;
+      h += '</div>';
     });
-    req.on('end', () => resolve(body));
-    req.on('error', reject);
-  });
-}
+    h += '</div></div>';
+    h += '</div>';
+  }
 
-function serveFile(res, fileName) {
-  const filePath = path.join(__dirname, fileName);
-  try {
-    if (!fs.existsSync(filePath)) {
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end(`File not found: ${fileName}`);
-      return;
-    }
-    res.writeHead(200, {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-store, no-cache, must-revalidate'
+  const clips = (s.videos || []).filter(v => v.title || v.url);
+  if (clips.length){
+    h += '<div class="sec reveal" style="animation-delay:.22s"><div class="lbl"><span class="sq"></span><span>代表的配信</span><span class="bar"></span></div><div class="clips">';
+    clips.forEach(v => {
+      h += '<div class="clip">';
+      if (v.title) h += `<div class="clip-t">${esc(v.title)}</div>`;
+      if (v.url && isX(v.url)) h += `<div class="clip-u">${esc(v.url)}</div>`;
+      h += '</div>';
     });
-    res.end(fs.readFileSync(filePath, 'utf-8'));
-  } catch (err) {
-    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('Error: ' + err.message);
+    h += '</div></div>';
   }
+
+  bd.innerHTML = h;
+  bd.scrollTop = 0;
+  wrap.classList.add('on');
 }
 
-const server = http.createServer(async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
-
-  const url = req.url.split('?')[0];
-  console.log(`[${new Date().toISOString()}] ${req.method} ${url}`);
-
-  if (url === '/dock' && req.method === 'GET') { serveFile(res, 'streamer_dic_dock.html'); return; }
-  if (url === '/overlay' && req.method === 'GET') { serveFile(res, 'streamer_dic_overlay.html'); return; }
-
-  if (url === '/api/streamers' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(streamersData));
-    return;
-  }
-
-  if (url === '/api/streamers' && req.method === 'POST') {
-    try {
-      const body = await readBody(req);
-      const data = JSON.parse(body);
-      if (!Array.isArray(data)) throw new Error('array required');
-      const prev = streamersData;
-      streamersData = data;
-      const ok = await saveStreamers();
-      if (!ok) streamersData = prev;
-      connectedClients.dock.forEach(c => {
-        if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'dataUpdated' }));
-      });
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok, count: streamersData.length, error: ok ? undefined : lastError }));
-    } catch (err) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: false, error: err.message }));
-    }
-    return;
-  }
-
-  if (url === '/api/settings' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(overlaySettings));
-    return;
-  }
-
-  if (url === '/api/reload' && req.method === 'POST') {
-    await loadAll();
-    connectedClients.dock.forEach(c => {
-      if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'dataUpdated' }));
-    });
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, count: streamersData.length }));
-    return;
-  }
-
-  // 保存先の状態確認
-  if (url === '/api/health' && req.method === 'GET') {
-    const info = {
-      storage: USE_SB ? 'supabase' : 'local-file',
-      supabaseUrl: USE_SB ? SB_URL : null,
-      table: USE_SB ? SB_TABLE : null,
-      streamers: streamersData.length,
-      lastError: lastError || null
-    };
-    if (USE_SB) {
-      try {
-        const probe = await sbGet('streamers');
-        info.reachable = true;
-        info.rowExists = probe !== null;
-      } catch (err) {
-        info.reachable = false;
-        info.lastError = err.message;
-      }
-    } else {
-      info.path = localStreamersPath;
-      info.fileExists = fs.existsSync(localStreamersPath);
-    }
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(info, null, 2));
-    return;
-  }
-
-  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-  res.end('Not Found');
-});
-
-/* ───── WebSocket ───── */
-const wss = new WebSocket.Server({ server });
-
-wss.on('connection', (ws) => {
-  let clientType = null;
-
-  ws.on('message', (message) => {
-    try {
-      const msg = JSON.parse(message);
-
-      if (msg.type === 'init') {
-        clientType = msg.clientType;
-        if (connectedClients[clientType]) connectedClients[clientType].add(ws);
-        ws.send(JSON.stringify({ type: 'ack', clientType, settings: overlaySettings }));
-        console.log(`${clientType} connected. dock=${connectedClients.dock.size} overlay=${connectedClients.overlay.size}`);
-        return;
-      }
-
-      if (msg.type === 'selectStreamer') {
-        const idx = streamersData.findIndex(x => x.id === msg.streamerId);
-        const s = idx >= 0 ? streamersData[idx] : null;
-        if (s) {
-          connectedClients.overlay.forEach(c => {
-            if (c.readyState === WebSocket.OPEN) {
-              c.send(JSON.stringify({ type: 'showStreamer', streamer: s, index: idx }));
-            }
-          });
-        }
-        return;
-      }
-
-      if (msg.type === 'hideStreamer') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'hideOverlay' }));
-        });
-        return;
-      }
-
-      if (msg.type === 'scroll') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'scroll', dir: msg.dir }));
-        });
-        return;
-      }
-
-      if (msg.type === 'playVideo') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'playVideo', url: msg.url, title: msg.title }));
-        });
-        return;
-      }
-
-      // ドック → オーバーレイ：再生操作
-      if (msg.type === 'videoCmd') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) {
-            c.send(JSON.stringify({ type: 'videoCmd', action: msg.action, value: msg.value }));
-          }
-        });
-        return;
-      }
-
-      // オーバーレイ → ドック：再生位置の通知
-      if (msg.type === 'videoState') {
-        connectedClients.dock.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) {
-            c.send(JSON.stringify({
-              type: 'videoState',
-              playing: msg.playing,
-              time: msg.time,
-              duration: msg.duration,
-              controllable: msg.controllable
-            }));
-          }
-        });
-        return;
-      }
-
-      if (msg.type === 'stopVideo') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'stopVideo' }));
-        });
-        return;
-      }
-
-      if (msg.type === 'setVolume') {
-        overlaySettings.volume = msg.volume;
-        saveSettingsSoon();
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'setVolume', volume: msg.volume }));
-        });
-        return;
-      }
-
-      if (msg.type === 'updateSettings') {
-        overlaySettings = Object.assign(overlaySettings, msg.settings || {});
-        saveSettingsSoon();
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'settings', settings: overlaySettings }));
-        });
-        return;
-      }
-
-    } catch (err) {
-      console.error('WS message error:', err.message);
-    }
-  });
-
-  ws.on('close', () => {
-    if (clientType && connectedClients[clientType]) connectedClients[clientType].delete(ws);
-  });
-
-  ws.on('error', (err) => console.error('WS error:', err.message));
-});
-
-/* ───── 起動 ───── */
-if (typeof fetch !== 'function') {
-  console.error('このNode.jsにはfetchがありません。Node 18以上が必要です。');
-}
-
-loadAll().then(() => {
-  server.listen(PORT, () => {
-    console.log('Streamer Dictionary Overlay Server');
-    console.log(`  Port:      ${PORT}`);
-    console.log(`  Storage:   ${USE_SB ? 'Supabase (' + SB_URL + ' / ' + SB_TABLE + ')' : 'ローカルファイル ' + localStreamersPath}`);
-    console.log(`  Streamers: ${streamersData.length}`);
-    if (!USE_SB) console.log('  ※ SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY が未設定です');
-  });
-});
+applySettings(cur);
+connect();
+</script>
+</body>
+</html>
