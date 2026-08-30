@@ -281,7 +281,10 @@ function startYT(videoId){
         setTimeout(() => killCaptions(e.target), 800);
         setTimeout(() => killCaptions(e.target), 2500);
       },
-      onStateChange: e => { if (e.data === YT.PlayerState.PLAYING) killCaptions(e.target); }
+      onStateChange: e => {
+        if (e.data === YT.PlayerState.PLAYING) killCaptions(e.target);
+        reportState();
+      }
     }
   });
 }
@@ -393,7 +396,7 @@ function playVideo(u, title){
   playerTitle.textContent = title || '';
   player.classList.add('on');
   const vid = ytVideoId(u);
-  if (vid){ startYT(vid); return; }
+  if (vid){ startYT(vid); setTimeout(reportState, 300); return; }
   clearStage();
   const f = document.createElement('iframe');
   f.setAttribute('allow','autoplay; encrypted-media');
@@ -406,6 +409,7 @@ function stopVideo(){
   pending = null;
   clearStage();
   player.classList.remove('on');
+  reportState();
 }
 
 function doScroll(dir){
