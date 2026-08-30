@@ -230,6 +230,7 @@ html,body{width:1280px;height:720px;background:transparent;overflow:hidden;font-
 </div>
 
 <script>
+const APP_VERSION = '2026-08-30-controls';
 const wrap = document.getElementById('wrap');
 const bd = document.getElementById('bd');
 const player = document.getElementById('player');
@@ -292,7 +293,7 @@ function startYT(videoId){
 function connect(){
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(proto + '//' + location.host);
-  ws.onopen = () => ws.send(JSON.stringify({type:'init', clientType:'overlay'}));
+  ws.onopen = () => ws.send(JSON.stringify({type:'init', clientType:'overlay', version:APP_VERSION}));
   ws.onmessage = e => {
     const m = JSON.parse(e.data);
     if (m.type === 'ack' && m.settings) applySettings(m.settings);
