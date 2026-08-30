@@ -4,6 +4,7 @@ const path = require('path');
 const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
+const VERSION = '2026-08-30-controls';   // 再生コントロール対応版
 
 /* ───── Supabase 設定 ─────
    SUPABASE_URL              例: https://xxxxxxxx.supabase.co
@@ -22,6 +23,7 @@ let streamersData = [];
 let overlaySettings = { width: 640, bgOpacity: 0.9, bgLevel: 8, fontScale: 1, volume: 60 };
 let connectedClients = { dock: new Set(), overlay: new Set() };
 let lastError = '';
+let clientVersions = { dock: null, overlay: null };
 
 /* ───── Supabase REST ───── */
 function sbHeaders(extra) {
@@ -227,6 +229,10 @@ const server = http.createServer(async (req, res) => {
   // 保存先の状態確認
   if (url === '/api/health' && req.method === 'GET') {
     const info = {
+      serverVersion: VERSION,
+      dockVersion: clientVersions.dock || '(未接続)',
+      overlayVersion: clientVersions.overlay || '(未接続)',
+      connected: { dock: connectedClients.dock.size, overlay: connectedClients.overlay.size },
       storage: USE_SB ? 'supabase' : 'local-file',
       supabaseUrl: USE_SB ? SB_URL : null,
       table: USE_SB ? SB_TABLE : null,
@@ -268,6 +274,7 @@ wss.on('connection', (ws) => {
       if (msg.type === 'init') {
         clientType = msg.clientType;
         if (connectedClients[clientType]) connectedClients[clientType].add(ws);
+        if (clientType in clientVersions) clientVersions[clientType] = msg.version || '(不明・旧版)';
         ws.send(JSON.stringify({ type: 'ack', clientType, settings: overlaySettings }));
         console.log(`${clientType} connected. dock=${connectedClients.dock.size} overlay=${connectedClients.overlay.size}`);
         return;
@@ -303,6 +310,32 @@ wss.on('connection', (ws) => {
       if (msg.type === 'playVideo') {
         connectedClients.overlay.forEach(c => {
           if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'playVideo', url: msg.url, title: msg.title }));
+        });
+        return;
+      }
+
+      // ドック → オーバーレイ：再生操作
+      if (msg.type === 'videoCmd') {
+        connectedClients.overlay.forEach(c => {
+          if (c.readyState === WebSocket.OPEN) {
+            c.send(JSON.stringify({ type: 'videoCmd', action: msg.action, value: msg.value }));
+          }
+        });
+        return;
+      }
+
+      // オーバーレイ → ドック：再生位置の通知
+      if (msg.type === 'videoState') {
+        connectedClients.dock.forEach(c => {
+          if (c.readyState === WebSocket.OPEN) {
+            c.send(JSON.stringify({
+              type: 'videoState',
+              playing: msg.playing,
+              time: msg.time,
+              duration: msg.duration,
+              controllable: msg.controllable
+            }));
+          }
         });
         return;
       }
@@ -351,7 +384,7 @@ if (typeof fetch !== 'function') {
 
 loadAll().then(() => {
   server.listen(PORT, () => {
-    console.log('Streamer Dictionary Overlay Server');
+    console.log('Streamer Dictionary Overlay Server  ' + VERSION);
     console.log(`  Port:      ${PORT}`);
     console.log(`  Storage:   ${USE_SB ? 'Supabase (' + SB_URL + ' / ' + SB_TABLE + ')' : 'ローカルファイル ' + localStreamersPath}`);
     console.log(`  Streamers: ${streamersData.length}`);
