@@ -121,11 +121,17 @@ html,body{width:1280px;height:720px;background:transparent;overflow:hidden;font-
 
 .era{position:relative;margin-bottom:8px}
 .era-year{
-  font-family:var(--mono);font-weight:700;
-  font-size:calc(52px * var(--fs));line-height:1;letter-spacing:-.02em;
-  color:transparent;-webkit-text-stroke:1px var(--rule-strong);
-  margin-bottom:-8px;padding-left:2px
+  position:sticky;top:-1px;z-index:5;
+  display:flex;align-items:center;gap:12px;
+  background:var(--panel-bg,rgba(11,14,20,.92));
+  padding:8px 0 6px;margin-bottom:-2px
 }
+.era-year b{
+  font-family:var(--mono);font-weight:700;
+  font-size:calc(40px * var(--fs));line-height:1;letter-spacing:-.02em;
+  color:transparent;-webkit-text-stroke:1px var(--amber)
+}
+.era-year i{flex:1;height:1px;background:var(--rule);font-style:normal}
 .tl{position:relative;padding-left:26px}
 .tl::before{content:'';position:absolute;left:3px;top:10px;bottom:6px;width:1px;background:var(--rule-strong)}
 .tl-item{position:relative;padding:16px 0 22px}
@@ -148,6 +154,30 @@ html,body{width:1280px;height:720px;background:transparent;overflow:hidden;font-
 .tl-fig figcaption{
   font-family:var(--mono);font-size:calc(11px * var(--fs));letter-spacing:.18em;
   color:var(--bone-dim);margin-top:8px
+}
+.tl-thumb{
+  margin-top:14px;display:inline-block;position:relative;max-width:100%;
+  border:1px solid var(--rule-strong);line-height:0
+}
+.tl-thumb img{display:block;max-width:100%;max-height:calc(240px * var(--fs))}
+.tl-thumb::after{
+  content:'';position:absolute;left:50%;top:50%;
+  width:calc(46px * var(--fs));height:calc(46px * var(--fs));
+  transform:translate(-50%,-50%);
+  background:rgba(11,14,20,.72);border:2px solid var(--amber);border-radius:50%
+}
+.tl-thumb::before{
+  content:'';position:absolute;left:50%;top:50%;z-index:1;
+  transform:translate(-38%,-50%);
+  border-style:solid;border-width:calc(9px * var(--fs)) 0 calc(9px * var(--fs)) calc(15px * var(--fs));
+  border-color:transparent transparent transparent var(--amber)
+}
+.tl-thumb figcaption{
+  position:absolute;left:0;right:0;bottom:0;z-index:2;
+  background:linear-gradient(180deg,rgba(11,14,20,0),rgba(11,14,20,.92));
+  padding:22px 12px 9px;
+  font-family:var(--mono);font-size:calc(11px * var(--fs));letter-spacing:.16em;
+  color:var(--bone);line-height:1.4
 }
 .tl-url{
   display:inline-block;margin-top:12px;padding:8px 14px;border:1px solid var(--rule-strong);
@@ -357,7 +387,10 @@ function applySettings(st){
   const G = Math.round(11 + t * 63);
   const B = Math.round(18 + t * 66);
   const a = Math.pow(Math.max(0, Math.min(1, cur.bgOpacity)), 0.45);
-  wrap.style.backgroundColor = `rgba(${R},${G},${B},${a.toFixed(3)})`;
+  const bg = `rgba(${R},${G},${B},${a.toFixed(3)})`;
+  wrap.style.backgroundColor = bg;
+  // 年号の追従帯は本文が透けないよう、必ず不透明側に寄せる
+  r.setProperty('--panel-bg', `rgba(${R},${G},${B},${Math.max(a,0.88).toFixed(3)})`);
   if (st.volume != null) setVolume(st.volume);
 }
 
@@ -379,6 +412,11 @@ function sortTimeline(list){
     return (y ? +y[0] : 9999) * 100 + (mo ? +mo[0] : 0);
   };
   return list.slice().sort((a,b) => key(a.date) - key(b.date));
+}
+
+function ytThumb(u){
+  const id = ytVideoId(u);
+  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : '';
 }
 
 let figNo = 0;
@@ -443,18 +481,24 @@ function show(s, index){
     sorted.forEach(e => {
       const y = yearOf(e.date);
       if (lastYear === null){
-        h += '<div class="era">' + (y ? `<div class="era-year">${y}</div>` : '') + '<div class="tl">';
+        h += '<div class="era">' + (y ? `<div class="era-year"><b>${y}</b><i></i></div>` : '') + '<div class="tl">';
         lastYear = y;
       } else if (y && y !== lastYear){
         h += '</div></div>';
-        h += `<div class="era"><div class="era-year">${y}</div><div class="tl">`;
+        h += `<div class="era"><div class="era-year"><b>${y}</b><i></i></div><div class="tl">`;
         lastYear = y;
       }
       h += '<div class="tl-item">';
       if (e.date)  h += `<div class="tl-date">${esc(e.date)}</div>`;
       if (e.title) h += `<div class="tl-title">${esc(e.title)}</div>`;
       if (e.text)  h += `<div class="tl-text">${esc(e.text)}</div>`;
-      if (e.imageUrl) h += fig(e.imageUrl, e.date || '');
+      if (e.imageUrl){
+        h += fig(e.imageUrl, e.date || '');
+      } else {
+        const th = ytThumb(e.url);
+        if (th) h += `<figure class="tl-thumb"><img src="${esc(th)}" alt="">
+          <figcaption>YOUTUBE</figcaption></figure>`;
+      }
       if (e.url)   h += `<div class="tl-url"><span class="k">LINK</span>${esc(e.url)}</div>`;
       h += '</div>';
     });
