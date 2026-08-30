@@ -284,6 +284,10 @@ button.rose:hover{background:var(--rose);color:#fff}
       <span class="tcode" id="tDur">0:00</span>
     </div>
 
+    <div class="hint" id="tpNote" style="display:none;color:var(--rose)">
+      オーバーレイから応答がありません。ブラウザソースを再読み込みしてください。
+    </div>
+
     <div class="rate-row" id="rateRow">
       <button data-rate="0.5">0.5x</button>
       <button data-rate="1" class="on">1x</button>
@@ -671,7 +675,11 @@ function fmt(sec){
 
 function vcmd(action, value){ send({ type:'videoCmd', action, value }); }
 
-$('tp-toggle').onclick  = () => vcmd('toggle');
+$('tp-toggle').onclick  = () => {
+  // 応答を待たずに表示を切り替える。実際の状態が返れば上書きされる
+  $('tp-toggle').textContent = ($('tp-toggle').textContent === '⏸') ? '▶' : '⏸';
+  vcmd('toggle');
+};
 $('tp-restart').onclick = () => vcmd('restart');
 $('tp-back30').onclick  = () => vcmd('seek', -30);
 $('tp-fwd10').onclick   = () => vcmd('seek', 10);
@@ -694,7 +702,17 @@ $('s-seek').onchange = () => {
   setTimeout(() => { seeking = false; }, 400);
 };
 
+let lastStateAt = 0;
+
+setInterval(() => {
+  const box = $('volBox');
+  if (!box || box.style.display === 'none') return;
+  const stale = lastStateAt === 0 || (Date.now() - lastStateAt > 3000);
+  $('tpNote').style.display = stale ? '' : 'none';
+}, 1000);
+
 function applyVideoState(m){
+  lastStateAt = Date.now();
   controllable = !!m.controllable;
   ['tp-toggle','tp-restart','tp-back30','tp-fwd10','tp-fwd30','s-seek'].forEach(id => {
     $(id).disabled = !controllable;
