@@ -439,7 +439,7 @@ button.rose:hover{background:var(--rose);color:#fff}
 </div>
 
 <script>
-const APP_VERSION = '2026-08-30-controls';
+const APP_VERSION = '2026-09-04-auto-save-images';
 const $ = id => document.getElementById(id);
 let all = [], filtered = [], ws = null, editing = null, gFilter = null;
 
@@ -931,14 +931,20 @@ $('imgFile').onchange = e => {
       if (!editing) editing = blank();
       editing.photoUrl = data;
       $('preview').src = data;
-      $('editStatus').textContent = '画像を取り込みました。保存を押してください。';
+      $('editStatus').textContent = '画像を取り込みました。';
+      if (canAutoSaveEditing(false)) void saveEditing();
     };
     img.src = ev.target.result;
   };
   rd.readAsDataURL(f);
   e.target.value = '';
 };
-$('imgClear').onclick = () => { if (!editing) return; editing.photoUrl = ''; $('preview').src = ''; };
+$('imgClear').onclick = () => {
+  if (!editing) return;
+  editing.photoUrl = '';
+  $('preview').src = '';
+  if (canAutoSaveEditing(true)) void saveEditing();
+};
 
 /* 人物画像 */
 $('bodyImgBtn').onclick = () => $('bodyImgFile').click();
@@ -959,14 +965,20 @@ $('bodyImgFile').onchange = e => {
       if (!editing) editing = blank();
       editing.bodyImageUrl = data;
       $('bodyPreview').src = data;
-      $('editStatus').textContent = '人物画像を取り込みました。保存を押してください。';
+      $('editStatus').textContent = '人物画像を取り込みました。';
+      if (canAutoSaveEditing(false)) void saveEditing();
     };
     img.src = ev.target.result;
   };
   rd.readAsDataURL(f);
   e.target.value = '';
 };
-$('bodyImgClear').onclick = () => { if (!editing) return; editing.bodyImageUrl = ''; $('bodyPreview').src = ''; };
+$('bodyImgClear').onclick = () => {
+  if (!editing) return;
+  editing.bodyImageUrl = '';
+  $('bodyPreview').src = '';
+  if (canAutoSaveEditing(true)) void saveEditing();
+};
 
 $('f-yomi').oninput = e => {
   const pos = e.target.selectionStart;
@@ -974,7 +986,13 @@ $('f-yomi').oninput = e => {
   e.target.setSelectionRange(pos, pos);
 };
 
-$('saveBtn').onclick = async () => {
+function canAutoSaveEditing(requireExisting){
+  if (!editing) return false;
+  if (requireExisting && !editing.id) return false;
+  return !!($('f-name').value.trim() || editing.name);
+}
+
+async function saveEditing(){
   if (!editing){ $('editStatus').textContent = '編集する配信者を選んでください'; return; }
   editing.name         = $('f-name').value.trim();
   editing.yomi         = toKatakana($('f-yomi').value.trim());
@@ -991,7 +1009,8 @@ $('saveBtn').onclick = async () => {
     if (i >= 0) all[i] = editing; else all.push(editing);
   }
   await push();
-};
+}
+$('saveBtn').onclick = saveEditing;
 
 $('delBtn').onclick = async () => {
   if (!editing || !editing.id) return;
