@@ -4,7 +4,7 @@ const path = require('path');
 const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
-const VERSION = '2026-08-30-controls';   // 再生コントロール対応版
+const VERSION = '2026-09-04-body-refresh';   // 人物画像の保存後再表示対応版
 
 /* ───── Supabase 設定 ─────
    SUPABASE_URL              例: https://xxxxxxxx.supabase.co
@@ -24,6 +24,7 @@ let overlaySettings = { width: 640, bgOpacity: 0.9, bgLevel: 8, fontScale: 1, vo
 let connectedClients = { dock: new Set(), overlay: new Set() };
 let lastError = '';
 let clientVersions = { dock: null, overlay: null };
+let selectedStreamerId = null;
 
 /* ───── Supabase REST ───── */
 function sbHeaders(extra) {
@@ -138,6 +139,20 @@ function saveSettingsSoon() {
   }, 1500);
 }
 
+function sendToOverlays(payload) {
+  connectedClients.overlay.forEach(c => {
+    if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify(payload));
+  });
+}
+
+function refreshSelectedStreamer() {
+  if (!selectedStreamerId) return;
+  const idx = streamersData.findIndex(x => x.id === selectedStreamerId);
+  const s = idx >= 0 ? streamersData[idx] : null;
+  if (!s) return;
+  sendToOverlays({ type: 'showStreamer', streamer: s, index: idx });
+}
+
 /* ───── HTTP ───── */
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -201,6 +216,7 @@ const server = http.createServer(async (req, res) => {
       connectedClients.dock.forEach(c => {
         if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'dataUpdated' }));
       });
+      if (ok) refreshSelectedStreamer();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok, count: streamersData.length, error: ok ? undefined : lastError }));
     } catch (err) {
@@ -221,6 +237,7 @@ const server = http.createServer(async (req, res) => {
     connectedClients.dock.forEach(c => {
       if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'dataUpdated' }));
     });
+    refreshSelectedStreamer();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, count: streamersData.length }));
     return;
@@ -237,6 +254,7 @@ const server = http.createServer(async (req, res) => {
       supabaseUrl: USE_SB ? SB_URL : null,
       table: USE_SB ? SB_TABLE : null,
       streamers: streamersData.length,
+      selectedStreamerId,
       lastError: lastError || null
     };
     if (USE_SB) {
@@ -284,43 +302,31 @@ wss.on('connection', (ws) => {
         const idx = streamersData.findIndex(x => x.id === msg.streamerId);
         const s = idx >= 0 ? streamersData[idx] : null;
         if (s) {
-          connectedClients.overlay.forEach(c => {
-            if (c.readyState === WebSocket.OPEN) {
-              c.send(JSON.stringify({ type: 'showStreamer', streamer: s, index: idx }));
-            }
-          });
+          selectedStreamerId = msg.streamerId;
+          sendToOverlays({ type: 'showStreamer', streamer: s, index: idx });
         }
         return;
       }
 
       if (msg.type === 'hideStreamer') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'hideOverlay' }));
-        });
+        selectedStreamerId = null;
+        sendToOverlays({ type: 'hideOverlay' });
         return;
       }
 
       if (msg.type === 'scroll') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'scroll', dir: msg.dir }));
-        });
+        sendToOverlays({ type: 'scroll', dir: msg.dir });
         return;
       }
 
       if (msg.type === 'playVideo') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'playVideo', url: msg.url, title: msg.title }));
-        });
+        sendToOverlays({ type: 'playVideo', url: msg.url, title: msg.title });
         return;
       }
 
       // ドック → オーバーレイ：再生操作
       if (msg.type === 'videoCmd') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) {
-            c.send(JSON.stringify({ type: 'videoCmd', action: msg.action, value: msg.value }));
-          }
-        });
+        sendToOverlays({ type: 'videoCmd', action: msg.action, value: msg.value });
         return;
       }
 
@@ -341,27 +347,21 @@ wss.on('connection', (ws) => {
       }
 
       if (msg.type === 'stopVideo') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'stopVideo' }));
-        });
+        sendToOverlays({ type: 'stopVideo' });
         return;
       }
 
       if (msg.type === 'setVolume') {
         overlaySettings.volume = msg.volume;
         saveSettingsSoon();
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'setVolume', volume: msg.volume }));
-        });
+        sendToOverlays({ type: 'setVolume', volume: msg.volume });
         return;
       }
 
       if (msg.type === 'updateSettings') {
         overlaySettings = Object.assign(overlaySettings, msg.settings || {});
         saveSettingsSoon();
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'settings', settings: overlaySettings }));
-        });
+        sendToOverlays({ type: 'settings', settings: overlaySettings });
         return;
       }
 
