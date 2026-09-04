@@ -94,6 +94,30 @@ function localWrite(p, data) {
   }
 }
 
+function bundledStreamers() {
+  const data = localRead(path.join(__dirname, 'streamers.json'), []);
+  return Array.isArray(data) ? data : [];
+}
+
+function mergeBundledStreamers(current) {
+  const data = Array.isArray(current) ? current.slice() : [];
+  const seed = bundledStreamers().filter(s => s && s.id);
+  let changed = false;
+  seed.forEach(s => {
+    const i = data.findIndex(x => x && x.id === s.id);
+    if (i >= 0) {
+      if (JSON.stringify(data[i]) !== JSON.stringify(s)) {
+        data[i] = s;
+        changed = true;
+      }
+    } else {
+      data.push(s);
+      changed = true;
+    }
+  });
+  return { data, changed, seedCount: seed.length };
+}
+
 function ensureUploadDir() {
   if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -210,11 +234,12 @@ async function loadAll() {
     try {
       const s = await sbGet('streamers');
       if (Array.isArray(s)) {
-        streamersData = s;
-        console.log(`Supabase: loaded ${s.length} streamers`);
+        const merged = mergeBundledStreamers(s);
+        streamersData = merged.data;
+        if (merged.changed) await sbPut('streamers', streamersData);
+        console.log(`Supabase: loaded ${s.length} streamers${merged.changed ? ', synced bundled data' : ''}`);
       } else {
-        const seed = localRead(path.join(__dirname, 'streamers.json'), null);
-        streamersData = Array.isArray(seed) ? seed : [];
+        streamersData = bundledStreamers();
         if (streamersData.length) {
           await sbPut('streamers', streamersData);
           console.log(`Supabase: seeded ${streamersData.length} streamers`);
@@ -230,12 +255,15 @@ async function loadAll() {
     } catch (err) {
       lastError = err.message;
       console.error('Supabase load failed:', err.message);
-      streamersData = localRead(localStreamersPath, []);
+      const merged = mergeBundledStreamers(localRead(localStreamersPath, []));
+      streamersData = merged.data;
     }
   } else {
-    streamersData = localRead(localStreamersPath, localRead(path.join(__dirname, 'streamers.json'), []));
+    const merged = mergeBundledStreamers(localRead(localStreamersPath, []));
+    streamersData = merged.data;
+    if (merged.changed) localWrite(localStreamersPath, streamersData);
     overlaySettings = Object.assign(overlaySettings, localRead(localSettingsPath, {}));
-    console.log(`Local: loaded ${streamersData.length} streamers`);
+    console.log(`Local: loaded ${streamersData.length} streamers${merged.changed ? ', synced bundled data' : ''}`);
   }
 }
 
@@ -506,7 +534,7 @@ wss.on('connection', (ws) => {
       if (msg.type === 'updateSettings') {
         overlaySettings = Object.assign(overlaySettings, msg.settings || {});
         saveSettingsSoon();
-        sendToOverlays({ type: 'settings', settings: msg.settings });
+        sendToOverlays({ type: 'settings', settings: overlaySettings });
         return;
       }
 
