@@ -4,20 +4,24 @@ const path = require('path');
 const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
-const VERSION = '2026-09-04-body-refresh';   // 人物画像の保存後再表示対応版
+const VERSION = '2026-09-05-timeline-upload';
 
 /* ───── Supabase 設定 ─────
    SUPABASE_URL              例: https://xxxxxxxx.supabase.co
    SUPABASE_SERVICE_ROLE_KEY サービスロールキー（サーバー専用・公開禁止）
+   SUPABASE_STORAGE_BUCKET   任意。設定すると年表画像をSupabase Storageへ保存
    未設定ならローカルファイルに保存する（開発用フォールバック）        */
 const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
 const SB_TABLE = process.env.SUPABASE_TABLE || 'streamer_dic';
+const SB_STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || process.env.SUPABASE_BUCKET || '';
 const USE_SB = !!(SB_URL && SB_KEY);
+const USE_SB_STORAGE = !!(USE_SB && SB_STORAGE_BUCKET);
 
 const LOCAL_DIR = process.env.DATA_DIR || __dirname;
 const localStreamersPath = path.join(LOCAL_DIR, 'streamers.json');
 const localSettingsPath  = path.join(LOCAL_DIR, 'settings.json');
+const uploadDir = process.env.UPLOAD_DIR || path.join(LOCAL_DIR, 'uploads');
 
 let streamersData = [];
 let overlaySettings = { width: 640, bgOpacity: 0.9, bgLevel: 8, fontScale: 1, volume: 60 };
@@ -54,6 +58,22 @@ async function sbPut(key, data) {
   return true;
 }
 
+async function sbUploadImage(objectName, buffer, mime) {
+  const url = `${SB_URL}/storage/v1/object/${encodeURIComponent(SB_STORAGE_BUCKET)}/${objectName}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type': mime,
+      'x-upsert': 'true'
+    },
+    body: buffer
+  });
+  if (!r.ok) throw new Error(`UPLOAD ${r.status} ${await r.text()}`);
+  return `${SB_URL}/storage/v1/object/public/${encodeURIComponent(SB_STORAGE_BUCKET)}/${objectName}`;
+}
+
 /* ───── ローカル保存（フォールバック） ───── */
 function localRead(p, fallback) {
   try {
@@ -74,6 +94,66 @@ function localWrite(p, data) {
   }
 }
 
+function ensureUploadDir() {
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+function imageExt(mime) {
+  if (mime === 'image/png') return 'png';
+  if (mime === 'image/webp') return 'webp';
+  if (mime === 'image/gif') return 'gif';
+  return 'jpg';
+}
+
+function mimeFromExt(ext) {
+  if (ext === '.png') return 'image/png';
+  if (ext === '.webp') return 'image/webp';
+  if (ext === '.gif') return 'image/gif';
+  return 'image/jpeg';
+}
+
+function safePart(s) {
+  return String(s || '')
+    .normalize('NFKC')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48) || 'image';
+}
+
+async function saveUploadedImage(dataUrl, meta) {
+  const m = String(dataUrl || '').match(/^data:(image\/(?:jpeg|jpg|png|webp|gif));base64,([a-zA-Z0-9+/=]+)$/);
+  if (!m) throw new Error('image data required');
+  const mime = m[1] === 'image/jpg' ? 'image/jpeg' : m[1];
+  const buffer = Buffer.from(m[2], 'base64');
+  if (!buffer.length) throw new Error('empty image');
+  if (buffer.length > 8 * 1024 * 1024) throw new Error('image too large');
+
+  const ext = imageExt(mime);
+  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+  const name = [safePart(meta.streamerId), safePart(meta.date), safePart(meta.title), stamp]
+    .filter(Boolean).join('-') + '.' + ext;
+  const objectName = `timeline/${name}`;
+
+  if (USE_SB_STORAGE) return { url: await sbUploadImage(objectName, buffer, mime), storage: 'supabase-storage' };
+
+  ensureUploadDir();
+  const filePath = path.join(uploadDir, name);
+  fs.writeFileSync(filePath, buffer);
+  return { url: `/uploads/${name}`, storage: 'local-upload' };
+}
+
+function serveUpload(res, urlPath) {
+  const name = path.basename(decodeURIComponent(urlPath.replace(/^\/uploads\//, '')));
+  const filePath = path.join(uploadDir, name);
+  if (!filePath.startsWith(uploadDir) || !fs.existsSync(filePath)) {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Not Found');
+    return;
+  }
+  res.writeHead(200, { 'Content-Type': mimeFromExt(path.extname(filePath).toLowerCase()), 'Cache-Control': 'public, max-age=31536000, immutable' });
+  fs.createReadStream(filePath).pipe(res);
+}
+
 /* ───── 読み込み ───── */
 async function loadAll() {
   if (USE_SB) {
@@ -83,7 +163,6 @@ async function loadAll() {
         streamersData = s;
         console.log(`Supabase: loaded ${s.length} streamers`);
       } else {
-        // 初回のみ、リポジトリ同梱の streamers.json を移行
         const seed = localRead(path.join(__dirname, 'streamers.json'), null);
         streamersData = Array.isArray(seed) ? seed : [];
         if (streamersData.length) {
@@ -197,6 +276,7 @@ const server = http.createServer(async (req, res) => {
 
   if (url === '/dock' && req.method === 'GET') { serveFile(res, 'streamer_dic_dock.html'); return; }
   if (url === '/overlay' && req.method === 'GET') { serveFile(res, 'streamer_dic_overlay.html'); return; }
+  if (url.startsWith('/uploads/') && req.method === 'GET') { serveUpload(res, url); return; }
 
   if (url === '/api/streamers' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -226,6 +306,20 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (url === '/api/upload-image' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body);
+      const saved = await saveUploadedImage(data.imageData || data.dataUrl, data || {});
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true, url: saved.url, storage: saved.storage }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
   if (url === '/api/settings' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(overlaySettings));
@@ -243,7 +337,6 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 保存先の状態確認
   if (url === '/api/health' && req.method === 'GET') {
     const info = {
       serverVersion: VERSION,
@@ -251,6 +344,7 @@ const server = http.createServer(async (req, res) => {
       overlayVersion: clientVersions.overlay || '(未接続)',
       connected: { dock: connectedClients.dock.size, overlay: connectedClients.overlay.size },
       storage: USE_SB ? 'supabase' : 'local-file',
+      imageStorage: USE_SB_STORAGE ? `supabase-storage:${SB_STORAGE_BUCKET}` : 'local-upload',
       supabaseUrl: USE_SB ? SB_URL : null,
       table: USE_SB ? SB_TABLE : null,
       streamers: streamersData.length,
@@ -269,6 +363,7 @@ const server = http.createServer(async (req, res) => {
     } else {
       info.path = localStreamersPath;
       info.fileExists = fs.existsSync(localStreamersPath);
+      info.uploadDir = uploadDir;
     }
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(info, null, 2));
@@ -324,13 +419,11 @@ wss.on('connection', (ws) => {
         return;
       }
 
-      // ドック → オーバーレイ：再生操作
       if (msg.type === 'videoCmd') {
         sendToOverlays({ type: 'videoCmd', action: msg.action, value: msg.value });
         return;
       }
 
-      // オーバーレイ → ドック：再生位置の通知
       if (msg.type === 'videoState') {
         connectedClients.dock.forEach(c => {
           if (c.readyState === WebSocket.OPEN) {
@@ -387,6 +480,7 @@ loadAll().then(() => {
     console.log('Streamer Dictionary Overlay Server  ' + VERSION);
     console.log(`  Port:      ${PORT}`);
     console.log(`  Storage:   ${USE_SB ? 'Supabase (' + SB_URL + ' / ' + SB_TABLE + ')' : 'ローカルファイル ' + localStreamersPath}`);
+    console.log(`  Images:    ${USE_SB_STORAGE ? 'Supabase Storage (' + SB_STORAGE_BUCKET + ')' : 'ローカルアップロード ' + uploadDir}`);
     console.log(`  Streamers: ${streamersData.length}`);
     if (!USE_SB) console.log('  ※ SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY が未設定です');
   });
