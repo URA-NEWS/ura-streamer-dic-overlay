@@ -154,6 +154,56 @@ function serveUpload(res, urlPath) {
   fs.createReadStream(filePath).pipe(res);
 }
 
+function patchDockHtml(html) {
+  const patchedVersion = html.replace(/const APP_VERSION = '[^']+';/, "const APP_VERSION = '2026-09-05-upload-backed-timeline';");
+  const replacement = String.raw`function pickTimelineImage(i){
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = ev => {
+      const img = new Image();
+      img.onload = async () => {
+        try {
+          const MAX = 1000;
+          const sc = Math.min(1, MAX / Math.max(img.width, img.height));
+          const cv = document.createElement('canvas');
+          cv.width = Math.round(img.width * sc);
+          cv.height = Math.round(img.height * sc);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          const imageData = cv.toDataURL('image/jpeg', 0.86);
+          $('editStatus').textContent = '画像をアップロードしています…';
+          const r = await fetch('/api/upload-image', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              imageData,
+              streamerId: editing && editing.id ? editing.id : 'new',
+              date: editing.timeline[i].date || '',
+              title: editing.timeline[i].title || ''
+            })
+          });
+          const j = await r.json();
+          if (!r.ok || !j.ok || !j.url) throw new Error(j.error || 'upload failed');
+          editing.timeline[i].imageUrl = j.url;
+          renderTimeline();
+          $('editStatus').textContent = '画像をアップロードしました。保存を押してください。';
+        } catch (err) {
+          $('editStatus').textContent = '画像をアップロードできませんでした：' + err.message;
+        }
+      };
+      img.src = ev.target.result;
+    };
+    rd.readAsDataURL(f);
+  };
+  inp.click();
+}
+
+/* 配信サイト */`;
+  return patchedVersion.replace(/function pickTimelineImage\(i\)\{[\s\S]*?\n\}\n\n\/\* 配信サイト \*\//, replacement);
+}
+
 /* ───── 読み込み ───── */
 async function loadAll() {
   if (USE_SB) {
@@ -253,11 +303,13 @@ function serveFile(res, fileName) {
       res.end(`File not found: ${fileName}`);
       return;
     }
+    let body = fs.readFileSync(filePath, 'utf-8');
+    if (fileName === 'streamer_dic_dock.html') body = patchDockHtml(body);
     res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store, no-cache, must-revalidate'
     });
-    res.end(fs.readFileSync(filePath, 'utf-8'));
+    res.end(body);
   } catch (err) {
     res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Error: ' + err.message);
@@ -454,7 +506,7 @@ wss.on('connection', (ws) => {
       if (msg.type === 'updateSettings') {
         overlaySettings = Object.assign(overlaySettings, msg.settings || {});
         saveSettingsSoon();
-        sendToOverlays({ type: 'settings', settings: overlaySettings });
+        sendToOverlays({ type: 'settings', settings: msg.settings });
         return;
       }
 
