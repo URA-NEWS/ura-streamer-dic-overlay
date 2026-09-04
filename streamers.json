@@ -1,393 +1,1366 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const WebSocket = require('ws');
-
-const PORT = process.env.PORT || 3942;
-const VERSION = '2026-08-30-controls';   // 再生コントロール対応版
-
-/* ───── Supabase 設定 ─────
-   SUPABASE_URL              例: https://xxxxxxxx.supabase.co
-   SUPABASE_SERVICE_ROLE_KEY サービスロールキー（サーバー専用・公開禁止）
-   未設定ならローカルファイルに保存する（開発用フォールバック）        */
-const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
-const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
-const SB_TABLE = process.env.SUPABASE_TABLE || 'streamer_dic';
-const USE_SB = !!(SB_URL && SB_KEY);
-
-const LOCAL_DIR = process.env.DATA_DIR || __dirname;
-const localStreamersPath = path.join(LOCAL_DIR, 'streamers.json');
-const localSettingsPath  = path.join(LOCAL_DIR, 'settings.json');
-
-let streamersData = [];
-let overlaySettings = { width: 640, bgOpacity: 0.9, bgLevel: 8, fontScale: 1, volume: 60 };
-let connectedClients = { dock: new Set(), overlay: new Set() };
-let lastError = '';
-let clientVersions = { dock: null, overlay: null };
-
-/* ───── Supabase REST ───── */
-function sbHeaders(extra) {
-  return Object.assign({
-    'apikey': SB_KEY,
-    'Authorization': 'Bearer ' + SB_KEY,
-    'Content-Type': 'application/json'
-  }, extra || {});
-}
-
-async function sbGet(key) {
-  const url = `${SB_URL}/rest/v1/${SB_TABLE}?key=eq.${encodeURIComponent(key)}&select=data`;
-  const r = await fetch(url, { headers: sbHeaders() });
-  if (!r.ok) throw new Error(`GET ${key} ${r.status} ${await r.text()}`);
-  const rows = await r.json();
-  return rows.length ? rows[0].data : null;
-}
-
-async function sbPut(key, data) {
-  const url = `${SB_URL}/rest/v1/${SB_TABLE}`;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: sbHeaders({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
-    body: JSON.stringify([{ key, data, updated_at: new Date().toISOString() }])
-  });
-  if (!r.ok) throw new Error(`PUT ${key} ${r.status} ${await r.text()}`);
-  return true;
-}
-
-/* ───── ローカル保存（フォールバック） ───── */
-function localRead(p, fallback) {
-  try {
-    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf-8'));
-  } catch (err) { console.error('local read failed:', err.message); }
-  return fallback;
-}
-
-function localWrite(p, data) {
-  try {
-    const tmp = p + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8');
-    fs.renameSync(tmp, p);
-    return true;
-  } catch (err) {
-    console.error('local write failed:', err.message);
-    return false;
+[
+  {
+    "name": "ぱるぱる@",
+    "yomi": "パルパル",
+    "photoUrl": "https://pbs.twimg.com/media/G81zveiaYAAcjUn.jpg",
+    "activePeriod": "少なくとも2015年末からX、2016年ごろから配信活動を確認。2026年現在も、ふわっち・KICK・X・YouTube切り抜き上で話題化。",
+    "style": "ふわっち大炎上ニュース / 雑談 / 生活密着 / 外配信 / 旅 / パチスロ・パチンコ / ポーカー / 恋愛・同棲配信 / KICK Just Chatting",
+    "birth": "1995年5月23日生まれと紹介されることがある（記事・まとめ由来の未確定情報）",
+    "origin": "兵庫県出身、大阪拠点と紹介されることがある",
+    "sites": [
+      {
+        "name": "ふわっち",
+        "id": "t:QomSo"
+      },
+      {
+        "name": "KICK",
+        "id": "paruparu"
+      },
+      {
+        "name": "X",
+        "id": "@QomSo"
+      },
+      {
+        "name": "YouTube切り抜き",
+        "id": "KP劇場 / 配信の虎チャンネル / 日刊配信マガジン / 沼にハマってみた。"
+      }
+    ],
+    "videos": [
+      {
+        "title": "さとうさ破局確定『新しい彼氏できた！』（2026年6月16日）",
+        "url": "https://www.youtube.com/watch?v=13uixghofl8"
+      },
+      {
+        "title": "坂口杏里と初コラボ『イビキ動画がバズッてる』（2026年6月27日）",
+        "url": "https://www.youtube.com/watch?v=lfizF48nN6U"
+      },
+      {
+        "title": "賭けポーカー疑惑騒動『俺の名前が出た? 記憶にない』（2026年7月10日）",
+        "url": "https://www.youtube.com/watch?v=Gtcl_YEOJk8"
+      },
+      {
+        "title": "違法賭博騒動で家を失うが機長は拒否!?（2026年7月18日）",
+        "url": "https://www.youtube.com/watch?v=tn0V1SNKpXw"
+      },
+      {
+        "title": "養分伊藤拉致事件の背景を考察『俺が煽った』（2026年7月25日）",
+        "url": "https://www.youtube.com/watch?v=ord1k_9iWoc"
+      },
+      {
+        "title": "養分伊藤拉致事件で検察の事情聴取を報告（2026年8月1日）",
+        "url": "https://www.youtube.com/watch?v=XNJWuaLW9XI"
+      },
+      {
+        "title": "坂口杏里と交際後初の電話（2026年8月18日）",
+        "url": "https://www.youtube.com/watch?v=bTseq0cERds"
+      },
+      {
+        "title": "坂口杏里との交際について本音で語る（2026年8月19日）",
+        "url": "https://www.youtube.com/watch?v=gBC5s6m0ggQ"
+      },
+      {
+        "title": "坂口杏里とぱるぱるが急接近で交際？（2026年8月20日）",
+        "url": "https://www.youtube.com/watch?v=K44aLbJXt60"
+      },
+      {
+        "title": "坂口杏里と愛の撮影会（2026年8月23日）",
+        "url": "https://www.youtube.com/watch?v=ZK4lwwg8Ttg"
+      },
+      {
+        "title": "坂口杏里と破局の危機（2026年8月23日）",
+        "url": "https://www.youtube.com/watch?v=M3ZsyXERekw"
+      },
+      {
+        "title": "坂口杏里とぱるぱるが完全同棲宣言（2026年8月27日）",
+        "url": "https://www.youtube.com/watch?v=8R1Pa0xySss"
+      },
+      {
+        "title": "ぱるぱる・坂口杏里、不審者訪問で警察沙汰（2026年8月28日）",
+        "url": "https://yutura.net/channel/62973/latest/?p=1"
+      }
+    ],
+    "timeline": [
+      {
+        "date": "2015年12月",
+        "title": "Xアカウント @QomSo を開設",
+        "text": "本人Xプロフィール上で、2015年12月からのアカウント運用が確認できる。プロフィールには『ホームレスから旅人』系の経歴、YouTubeや生放送への導線が置かれており、活動の起点として年表に入れる。",
+        "imageUrl": "",
+        "url": "https://x.com/QomSo"
+      },
+      {
+        "date": "2018年9月ごろ",
+        "title": "飲酒運転疑惑で炎上、本人が釈明・謝罪へ",
+        "text": "配信者まとめ記事で、飲酒運転疑惑による炎上と、本人がXで釈明・謝罪を出した流れが紹介されている。古い本人中心の炎上として重要。記事ベースのため、図鑑では『疑惑』『炎上』『釈明』表現で扱う。",
+        "imageUrl": "",
+        "url": "https://neetola.com/paruparu/"
+      },
+      {
+        "date": "2022年7月",
+        "title": "142キロで富士山登頂、登頂・下山成功として拡散",
+        "text": "まとめ記事で、ぱるぱるが142キロで富士山登頂に挑み、登頂・下山成功、体重減少まで報告した流れが紹介されている。本人の体を張った大型企画として代表的。",
+        "imageUrl": "",
+        "url": "https://gochmatome.livedoor.blog/archives/15750170.html"
+      },
+      {
+        "date": "2024年2月",
+        "title": "ふわっち四天王の一角として紹介される",
+        "text": "ふわっち文化解説noteで、ぜろわん・せいZ・ぱるぱる・養分@伊藤が『四天王』として紹介。ぱるぱるは兵庫県出身・大阪拠点、毎日昼12時04分ごろの『ふわっち大炎上ニュース』、平均同時閲覧5000人程と説明されている。",
+        "imageUrl": "",
+        "url": "https://note.com/ha1107/n/n2fb65cf76a1a"
+      },
+      {
+        "date": "2024年2月",
+        "title": "聞き役・通話取材型の炎上ニュース配信者として定着",
+        "text": "同noteでは、トラブル時に双方へLINE通話し、どちらの肩も持たず話を聞くスタイルと紹介されている。本人が直接トラブル当事者になる前段として、広い人脈と通話力がキャラの核になっている。",
+        "imageUrl": "",
+        "url": "https://note.com/ha1107/n/n2fb65cf76a1a"
+      },
+      {
+        "date": "2024年2月",
+        "title": "愛称・ぱるリス・読み間違いなどキャラが整理される",
+        "text": "愛称は『ぱるちゃん』、推しリスナーは『ぱるリス』。煙草を吸わない、自動車免許なし、漢字やカタカナ語の読み間違いも見どころ、配信者を集めた麻雀好き、N1グランプリ入賞歴ありと紹介される。",
+        "imageUrl": "",
+        "url": "https://note.com/ha1107/n/n2fb65cf76a1a"
+      },
+      {
+        "date": "2024年ごろ",
+        "title": "TikTok『裏ぱる』系タグで切り抜きが拡散",
+        "text": "TikTok系集計サイトで、#裏ぱる が大きな視聴数を持つタグとして確認できる。富士登山、さとうさ、ふわっち、裏ぱる関連の短尺切り抜きが複数出回っており、本人のキャラが短尺側にも拡散している。",
+        "imageUrl": "",
+        "url": "https://urlebird.com/hash/%E8%A3%8F%E3%81%B1%E3%82%8B/"
+      },
+      {
+        "date": "2026年1月16日",
+        "title": "養分伊藤失踪騒動で、家に向かった人物として名前が出る",
+        "text": "KP劇場の切り抜きで、前日にぱるぱるが養分伊藤の家へ行き、失踪が発覚した流れが説明されている。本人が情報を握る側・現場に近い側として扱われた大きな騒動。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=Foc5NJn_Bsg"
+      },
+      {
+        "date": "2026年1月17日",
+        "title": "養分伊藤騒動で『炎上の発端はぱるぱる』とまとめられる",
+        "text": "まとめ記事で、X上の『炎上の発端はぱるぱる』という反応や、ぱるぱるからの養分情報、配信を休んで行動している旨の投稿が紹介されている。本人が騒動の中心人物として扱われた記録。",
+        "imageUrl": "",
+        "url": "https://gochmatome.livedoor.blog/archives/29295610.html"
+      },
+      {
+        "date": "2026年1月23日",
+        "title": "養分伊藤事件の裏側、せいZとの決裂が切り抜き化",
+        "text": "KP劇場の切り抜きで、養分伊藤本人の説明配信後、ぱるぱるが裏で動いていたこと、せいZとの衝突、養分伊藤の逃走や保護直後の話が整理されている。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=IvDq4PpT2Dc"
+      },
+      {
+        "date": "2026年1月29日",
+        "title": "養分伊藤事件をめぐり、せいZと絶縁対立",
+        "text": "KP劇場の切り抜きで、養分伊藤事件後のぱるぱるとせいZの対立が扱われる。『黙ってることがある』『言えばいいじゃん』という確執が切り抜きタイトル化し、事件後の人間関係炎上として残る。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=v3gWGaTtpaI"
+      },
+      {
+        "date": "2026年1月31日",
+        "title": "養分伊藤事件で、まゆへの関与疑惑確認が動画化",
+        "text": "KP劇場の切り抜きで、養分伊藤事件に関する憶測を受け、まゆが関与を否定し、ぱるぱるが通話で確認する流れが動画化されている。本人が事件周辺の確認役として再び中心に出る。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=N6VNPOQVyOM"
+      },
+      {
+        "date": "2026年6月16日",
+        "title": "さとうさとの破局が確定、同棲解消へ",
+        "text": "KP劇場の切り抜きで、ぱるぱるとさとうさが大阪で約2年半同棲していたこと、女性配信者とのマッサージ企画をきっかけに大喧嘩が起きたこと、6月15日の配信で破局・復縁なしの流れになったことが説明されている。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=13uixghofl8"
+      },
+      {
+        "date": "2026年6月27日",
+        "title": "坂口杏里と初コラボ",
+        "text": "KP劇場の切り抜きで、坂口杏里がふわっちに来た直後の初通話コラボとして動画化。後の交際・同棲騒動につながる最初期接点として入れる。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=lfizF48nN6U"
+      },
+      {
+        "date": "2026年7月10日",
+        "title": "賭けポーカー疑惑で名前が出る",
+        "text": "KP劇場の切り抜きで、コレコレ配信発の賭けポーカー疑惑をめぐり、ぱるぱるの名前が出た件を本人が『記憶にない』と話す流れが動画化。本人中心の疑惑・炎上として重要。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=Gtcl_YEOJk8"
+      },
+      {
+        "date": "2026年7月ごろ",
+        "title": "賭けポーカー参加疑惑について『完全否定』側としてまとめられる",
+        "text": "ネットまとめでは、ぱるぱるが賭けポーカーへの参加疑惑を完全否定した人物として表に入れられている。真偽断定ではなく『疑惑として名前が出た』『本人は否定』という扱いが必要。",
+        "imageUrl": "",
+        "url": "https://egg5ch.net/matome/liver-kake-poker-jiken-matome-2026"
+      },
+      {
+        "date": "2026年7月ごろ",
+        "title": "賭けポーカー疑惑が配信者界隈の大きな炎上として記事化",
+        "text": "coki記事で、配信者界隈の賭博疑惑が大きく扱われ、コレコレ配信で複数配信者の名前が挙がった流れが整理されている。ぱるぱるの項目は、疑惑報道の文脈と本人否定をセットで載せる。",
+        "imageUrl": "",
+        "url": "https://coki.jp/article/column/89120/"
+      },
+      {
+        "date": "2026年7月ごろ",
+        "title": "違法賭博疑惑で、せいZ証言と本人否定が対立と整理される",
+        "text": "芸能トレンド系まとめ記事で、ぱるぱるは7月9日のふわっち配信で違法賭博疑惑を完全否定した一方、せいZ側の証言と食い違っている、と整理されている。記事は『確定証拠はない』前提で、疑惑・否定・証言対立として扱っている。",
+        "imageUrl": "",
+        "url": "https://geinou-trend-ura-news.blog.jp/archives/40589602.html"
+      },
+      {
+        "date": "2026年7月18日",
+        "title": "違法賭博騒動の余波で、家・宿泊先問題が切り抜き化",
+        "text": "KP劇場の切り抜きで、ぱるぱるが東京のポーカー大会に向かう流れ、さとうさとの破局で大阪の家を失う流れ、機長宅に泊まりたいが拒否される流れが扱われている。疑惑後の生活面まで含めた本人トピック。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=tn0V1SNKpXw"
+      },
+      {
+        "date": "2026年7月25日",
+        "title": "養分伊藤拉致事件の背景で『俺が煽った』発言が切り抜き化",
+        "text": "KP劇場の切り抜きで、7月22日の容疑者逮捕後、投げ師・配信者たわまんとの経緯や、ぱるぱる・ヤミー配信の背景が検証されている。本人の過去発言や煽りが事件背景として扱われた大きな炎上。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=ord1k_9iWoc"
+      },
+      {
+        "date": "2026年8月1日",
+        "title": "養分伊藤拉致事件で検察の事情聴取を受けたと報告",
+        "text": "KP劇場の切り抜きで、ぱるぱるが検察の事情聴取を受けたと報告。たわまんとの配信上の口論や、事件前の流れが背景として整理されている。本人が公的手続きに関わったと語った節目。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=XNJWuaLW9XI"
+      },
+      {
+        "date": "2026年8月上旬",
+        "title": "救急車・病院処置・検査予定をXで報告",
+        "text": "Xミラー上で、体調不良により救急車を呼んだこと、病院で処置を受けたこと、検査予定であることを報告した投稿が確認できる。体重・健康問題も本人の配信外トピックとして話題化。",
+        "imageUrl": "",
+        "url": "https://w.twstalker.com/QomSo"
+      },
+      {
+        "date": "2026年8月中旬",
+        "title": "断食・177キロ・体重減少報告がXで拡散",
+        "text": "Xミラー上で、177キロからの断食、食事変更、数日での体重減少、2週間で合計10キロ減といった投稿が確認できる。健康企画・生活密着の直近SNSトピック。",
+        "imageUrl": "",
+        "url": "https://w.twstalker.com/QomSo"
+      },
+      {
+        "date": "2026年8月14日",
+        "title": "坂口杏里とのホテル配信、交際前夜のキス映像が記事化",
+        "text": "ユーチュラ記事で、8月14日の配信中、同じホテル内で坂口杏里と会い、同棲や交際の条件を話し合い、キスもあった流れが詳報されている。家がない・借金があるという生活状況も本人の口から語られたとされる。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/162457"
+      },
+      {
+        "date": "2026年8月15日",
+        "title": "坂口杏里が『ぱるちゃんと付き合いました』と交際報告",
+        "text": "ユーチュラ記事で、坂口杏里がXとふわっち配信で交際を報告し、ぱるぱるも反応した流れが整理されている。ふわっち外のネットニュースにも波及した大きな本人中心トピック。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/162457"
+      },
+      {
+        "date": "2026年8月16日",
+        "title": "『借金を抱えた家なしの配信者』との交際としてライブドア系にも拡散",
+        "text": "ライブドアニュースのトピックで、坂口杏里が家なし・借金ありの配信者との交際を発表した件として拡散。一般ニュース側にも拾われたことで、ふわっち界隈外にも話題が広がった。",
+        "imageUrl": "",
+        "url": "https://news.livedoor.com/topics/detail/32078474/"
+      },
+      {
+        "date": "2026年8月17日",
+        "title": "Xで『270kgのビッグカップル』として拡散",
+        "text": "Yahoo!リアルタイム検索上で、坂口杏里とぱるぱるの交際を『ふたりで270kgのビッグカップル』と表現する投稿が確認できる。交際発表がX上でネタ化・拡散された例として入れる。",
+        "imageUrl": "",
+        "url": "https://search.yahoo.co.jp/realtime/search?ei=UTF-8&mtype=video&p=%E3%81%B5%E3%82%8F%E3%81%A3%E3%81%A1%E9%85%8D%E4%BF%A1%E8%80%85&rkf=1"
+      },
+      {
+        "date": "2026年8月17日",
+        "title": "坂口杏里との交際後、人間不信・PTSDなど重い話題も動画化",
+        "text": "KP劇場の最新一覧で、坂口杏里とぱるぱるをめぐる『人間不信とPTSD、母、父、拉致監禁事件』系の切り抜きが確認できる。交際話題が単なるカップル配信だけでなく、過去や精神面の話題にも広がった。",
+        "imageUrl": "",
+        "url": "https://yutura.net/channel/62973/latest/?p=1"
+      },
+      {
+        "date": "2026年8月17日",
+        "title": "神聖キラッカーズに『坂口杏里＆ぱるぱる』として掲載",
+        "text": "KICK配信クルー『神聖キラッカーズ』公式サイトのニュースで、『坂口杏里＆ぱるぱる』の新メンバー加入が掲載。KICK側での露出が増えた節目。",
+        "imageUrl": "",
+        "url": "https://killakers.jp/"
+      },
+      {
+        "date": "2026年8月18日",
+        "title": "坂口杏里と交際後初の電話",
+        "text": "配信の虎チャンネルの切り抜き。交際発表後の電話が『愛の電話』として動画化され、交際騒動が継続コンテンツ化していく。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=bTseq0cERds"
+      },
+      {
+        "date": "2026年8月18日",
+        "title": "KICKデート配信で『触んないで！』と豹変、ネットニュース化",
+        "text": "女性自身/ライブドア記事で、8月17日のKICKカップル配信中、坂口杏里が街中でつまずいた際に、支えようとしたぱるぱるへ『触んないで！』と強く反応し、ぱるぱるが戸惑う場面が報じられた。交際直後の不穏な空気として一般ニュース化。",
+        "imageUrl": "",
+        "url": "https://news.livedoor.com/article/detail/32097862/"
+      },
+      {
+        "date": "2026年8月20日",
+        "title": "同棲への不安、ぜろわん激怒、自分の時間がない問題が切り抜き化",
+        "text": "KP劇場の最新一覧で、坂口杏里とぱるぱるの同棲に先行き不安、ぜろわん激怒、自分の時間がないが進むしかない、という内容の切り抜きが確認できる。交際後すぐ不穏要素が出た流れ。",
+        "imageUrl": "",
+        "url": "https://yutura.net/channel/62973/latest/?p=1"
+      },
+      {
+        "date": "2026年8月20日",
+        "title": "『世話係みたいになってる』発言と冷却期間がネットニュース化",
+        "text": "女性自身/ライブドア記事で、KICK配信中のぱるぱるが『ひとりの時間が無い』『世話係になってる』と不満を漏らし、2日間ほど会わない冷却期間に触れたと報じられた。交際宣言から数日で早くも暗雲、という見出しで拡散。",
+        "imageUrl": "",
+        "url": "https://news.livedoor.com/article/detail/32111778/"
+      },
+      {
+        "date": "2026年8月21日",
+        "title": "同棲開始、『薬は俺が管理する』発言が切り抜き化",
+        "text": "KP劇場の最新一覧で、坂口杏里との同棲開始と、『薬は俺が管理する』『薬はやめた』という内容の切り抜きが確認できる。交際・同棲話題が生活管理の話まで進んだ。",
+        "imageUrl": "",
+        "url": "https://yutura.net/channel/62973/latest/?p=1"
+      },
+      {
+        "date": "2026年8月21日",
+        "title": "KICKアカウント作成・認証バッジ周辺がXで話題化",
+        "text": "Xミラー上で、ぱるぱるがKICKアカウントを作成し、認証バッジが付いたという投稿断片が確認できる。ふわっち中心からKICK方面へ話題が広がった節目。",
+        "imageUrl": "",
+        "url": "https://www.sotwe.com/newsAKZ"
+      },
+      {
+        "date": "2026年8月23日",
+        "title": "坂口杏里と愛の撮影会",
+        "text": "配信の虎チャンネルの切り抜き。『愛の撮影会』として、カップル配信の見せ場が動画化される。交際発表後の代表的な切り抜き。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=ZK4lwwg8Ttg"
+      },
+      {
+        "date": "2026年8月23日",
+        "title": "坂口杏里と破局の危機",
+        "text": "配信の虎チャンネルの切り抜き。交際直後にもかかわらず『破局の危機』として動画化され、カップル配信の急展開が話題化。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=M3ZsyXERekw"
+      },
+      {
+        "date": "2026年8月下旬",
+        "title": "坂口杏里のKICK収益・本人確認・出金不能問題がXで話題化",
+        "text": "Xミラー上で、坂口杏里がKICKで約7万円稼いだが本人確認が通らず出金できない、というトピックが確認できる。ぱるぱるとのKICK移行・同棲騒動の周辺話題として入れる。",
+        "imageUrl": "",
+        "url": "https://www.sotwe.com/newsAKZ"
+      },
+      {
+        "date": "2026年8月下旬",
+        "title": "坂口杏里1日BAN、ナイス3カ月剥奪、規制補填10万円がXまとめで話題化",
+        "text": "ふわっち監視員系のXミラーで、坂口杏里の1日BAN、ナイス3カ月剥奪、7時間のやり取り後の仲直り、規制補填10万円といった簡易トピックスが確認できる。ぱるぱるとのカップル配信が規制・補填まで含む炎上型トピックになった。",
+        "imageUrl": "",
+        "url": "https://w.twstalker.com/whowatch_kansi"
+      },
+      {
+        "date": "2026年8月26日",
+        "title": "初カップル外配信、直後のガチ喧嘩、歌舞伎町上陸などが連続切り抜き化",
+        "text": "配信の虎チャンネル一覧で、坂口杏里とぱるぱるの初カップル外配信、直後のガチ喧嘩、意見の相違、歌舞伎町へ、同棲三日目の結末など、同日に複数本の切り抜きが並ぶ。本人中心の短期連続炎上として強い。",
+        "imageUrl": "",
+        "url": "https://yutura.net/channel/57636/latest/?p=5"
+      },
+      {
+        "date": "2026年8月27日",
+        "title": "坂口杏里と完全同棲宣言",
+        "text": "日刊配信マガジンの切り抜きで、坂口杏里とぱるぱるが完全同棲宣言。ホテル生活・KICK・規制・喧嘩・仲直りの流れを経て、同棲が大きな見出しになった。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=8R1Pa0xySss"
+      },
+      {
+        "date": "2026年8月28日",
+        "title": "坂口杏里との部屋に不審者が訪問、警察沙汰に",
+        "text": "8月27日のKICK配信中、坂口杏里とぱるぱるの部屋に見知らぬ女性が来てドアを叩き、坂口がぱるぱるに110番を求める騒ぎになった。翌日、女性誌系ニュースでも配信中の不審者訪問として報じられた。",
+        "imageUrl": "",
+        "url": "https://news.livedoor.com/article/detail/32185014/"
+      },
+      {
+        "date": "2026年8月29日",
+        "title": "坂口杏里との大喧嘩で警察連行、ゼキシン宅退去へ",
+        "text": "KP劇場の最新動画一覧で、坂口杏里との同棲が修羅場化し、ぱるぱるたちが警察に連行されたことでゼキシンから退去を言い渡された流れが確認できる。交際開始から短期間で警察沙汰まで発展した最大級の本人トラブル。",
+        "imageUrl": "",
+        "url": "https://yutura.net/channel/62973/latest/?p=1"
+      },
+      {
+        "date": "2026年8月31日",
+        "title": "坂口杏里暴行容疑、検察送致報道と事件当日検証が切り抜き化",
+        "text": "KP劇場で、坂口杏里が暴行容疑で逮捕され、釈放されず検察へ身柄送検されたという流れと、事件当日の配信内容の検証動画が公開された。ぱるぱる本人が相手側として映る後日談。",
+        "imageUrl": "",
+        "url": "https://yutura.net/channel/62973/latest/?p=1"
+      },
+      {
+        "date": "2026年9月1日",
+        "title": "坂口杏里配信収益150万円、ぱるぱるに「金目当て」批判",
+        "text": "女性自身系記事で、坂口杏里の配信収益が150万円規模とされる一方、交際相手ぱるぱるに対し「食い物にしてる」「金目当て」といった批判が止まないと報じられた。坂口杏里騒動がぱるぱる本人への批判に転化した局面。",
+        "imageUrl": "",
+        "url": "https://news.livedoor.com/article/detail/32214662/"
+      }
+    ],
+    "intro": "ふわっち・KICK・Xを横断して活動する男性ライブ配信者。\nアカウントは主に @QomSo、KICKは paruparu。\n\n本人プロフィールでは『ホームレスから旅人へ』系の経歴を掲げる。\n生活密着、外配信、旅、パチスロ・パチンコ、ポーカー、恋愛や同棲、人間関係まで、そのまま配信の題材にするタイプ。\n\nふわっちでは『ふわっち大炎上ニュース』の人として知られ、前日の配信者界隈の出来事をまとめるニュース役でもある。\nただしこの図鑑では、ぱるぱるが他人の事件を取り上げただけの項目は除外し、ぱるぱる本人が中心になった話題・疑惑・炎上・交際・生活トピックに絞る。\n\n代表的な本人トピックは、2018年ごろの飲酒運転疑惑炎上、2022年の142キロ富士山登頂、2026年1月の養分伊藤失踪/拉致事件周辺で名前が中心に出た件、2026年6月のさとうさ破局、2026年7月の賭けポーカー疑惑で名前が挙がった件、2026年8月の検察事情聴取報告、救急車・断食・177キロの健康/体重話題、坂口杏里との交際・KICK・同棲・BAN/補填周辺の連続炎上。\n\n紹介するなら『他人の炎上を読むだけでなく、自分の生活・恋愛・疑惑・人間関係もそのまま話題になる、ふわっち/KICK界隈の当事者型ニュース配信者』。",
+    "id": "paruparu",
+    "bodyImageUrl": ""
+  },
+  {
+    "name": "コレコレ",
+    "yomi": "コレコレ",
+    "photoUrl": "https://imgcp.aacdn.jp/img-a/1200/900/aa_news/article/2024/10/21/6715b42f922c9.jpg",
+    "activePeriod": "2005年ごろからネット配信を開始。ニコ生、ツイキャス、YouTube、Xスペース、TikTok LIVE、KICKまで横断して活動。",
+    "style": "暴露 / 告発 / 視聴者相談 / 闇ニュース / 通話凸 / 事実確認 / 炎上解説 / TikTok LIVE / KICK / 鼻マスク",
+    "birth": "1989年8月12日",
+    "origin": "広島県出身",
+    "sites": [
+      {
+        "name": "公式サイト",
+        "id": "koretan.net"
+      },
+      {
+        "name": "YouTube",
+        "id": "コレコレチャンネル KoreTube"
+      },
+      {
+        "name": "YouTubeサブ",
+        "id": "コレコレサブチャンネル"
+      },
+      {
+        "name": "X",
+        "id": "@korekore19 / @korekore_ch"
+      },
+      {
+        "name": "TikTok",
+        "id": "@korekore_tiktok"
+      },
+      {
+        "name": "KICK",
+        "id": "公式サイト掲載の配信導線あり"
+      },
+      {
+        "name": "ツイキャス",
+        "id": "コレコレ@配信者 / コレコレ@配信アラート"
+      }
+    ],
+    "videos": [
+      {
+        "title": "ゆりにゃ・戦慄かなの薬物使用疑惑で同接9.6万人超（2020年7月18日）",
+        "url": "https://www.youtube.com/watch?v=Ve90pGniEKw"
+      },
+      {
+        "title": "てんちむ・かねこあや騒動で同接12.3万人超（2020年9月8日）",
+        "url": "https://www.youtube.com/watch?v=0ybG91X2y28"
+      },
+      {
+        "title": "ワタナベマホト暴露で同接17.5万人超（2021年1月21日）",
+        "url": "https://www.youtube.com/watch?v=XmhDPdJStJE"
+      },
+      {
+        "title": "コムドット・あやなんら31人宴会騒動で同接19.7万人超（2021年6月24日）",
+        "url": "https://www.youtube.com/watch?v=HFLGR8orx-A"
+      },
+      {
+        "title": "みきおだ・みっきー警察沙汰暴露で同接31.6万人超（2021年7月7日）",
+        "url": "https://www.youtube.com/watch?v=zulBfb3zVWc"
+      },
+      {
+        "title": "ななもり。不倫疑惑暴露で同接35.9万人超（2022年3月9日）",
+        "url": "https://www.youtube.com/watch?v=bTYIqHLG548"
+      },
+      {
+        "title": "ななもり。続報で同接51万9886人（2022年3月11日）",
+        "url": "https://www.youtube.com/watch?v=1zlMg9Ljz-g"
+      },
+      {
+        "title": "ゼロ距離カウントダウン / コレコレ × ヒカル × まふまふ ほか（2023年）",
+        "url": "https://www.youtube.com/watch?v=9rk-Pab3ugQ"
+      },
+      {
+        "title": "ゆりにゃ彼氏たいちくん被害主張の事実確認配信（2025年8月1日）",
+        "url": "https://www.youtube.com/watch?v=GBsJdhg-1n0"
+      },
+      {
+        "title": "Kore:ct崩壊と前運営会社との金銭問題（2019年）",
+        "url": "https://yutura.net/news/archives/12516"
+      },
+      {
+        "title": "偽物ポケカ祭りくじ店へ突撃し暴行被害（2023年7月）",
+        "url": "https://yutura.net/news/archives/97935"
+      },
+      {
+        "title": "大阪万博を辛口レポート、生配信ルール錯綜（2025年4月）",
+        "url": "https://yutura.net/news/archives/133935"
+      }
+    ],
+    "timeline": [
+      {
+        "date": "1989年8月12日",
+        "title": "広島県で生まれる",
+        "text": "公式プロフィールや各種プロフィールで、1989年8月12日生まれ、広島県出身とされる。鼻マスクをトレードマークにした配信者像の土台。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2005年",
+        "title": "BARギコっぽいONLINEで初配信",
+        "text": "16歳ごろからネット配信を開始。最初は視聴者が数人規模だったが、ほぼ毎日配信を続け、サイト内で人気化したと紹介される。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2008年8月3日",
+        "title": "BARギコっぽいONLINEをアクセス禁止に",
+        "text": "初期配信時代からアクセス禁止を経験。ねとらじ、こえ部など複数サイトを渡り歩く、BAN上等の古参配信者としてのキャラが形成される。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2009年7月3日",
+        "title": "ニコニコ生放送で配信開始",
+        "text": "ニコ生で雑談、逆凸、喧嘩凸、声真似などを展開。短期間で人気化し、のちに石川典行、渋谷のキング、ばくはげ画伯と並ぶ『ニコ生四大癌』の一人として語られる。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2011年9月15日",
+        "title": "ニコ生コミュニティ人数10万人突破",
+        "text": "ニコ生時代にコミュニティ登録者10万人を突破。初期ネット配信界で、固定リスナーを抱える大型生主として地位を固める。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2013年12月12日",
+        "title": "ツイキャス配信を開始",
+        "text": "ツイキャスで配信開始。のちにツイキャス史上初のサポーター20万人突破、30万人突破へつながる。『ツイキャス王』の肩書きが強まる転換点。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2014年12月1日",
+        "title": "YouTubeチャンネル開設",
+        "text": "YouTubeチャンネルを開設。2016年夏ごろから本格投稿を開始し、タバコポイ捨て注意、切り抜き、生放送アーカイブ、闇ニュースへ拡張していく。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/@korekorech"
+      },
+      {
+        "date": "2016年7月12日",
+        "title": "『マツコの知らない世界』で動画が紹介される",
+        "text": "テレビ番組で動画が紹介され、ネット配信者としての存在が地上波側にも触れられる。ネット内だけで完結しない知名度を得ていく。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2017年ごろ",
+        "title": "タバコのポイ捨て注意企画で知られる",
+        "text": "路上でタバコのポイ捨てを注意する実写企画が代表コンテンツ化。暴露配信だけでなく、街頭での注意・揉め事・口論をコンテンツにするスタイルが広まった。",
+        "imageUrl": "",
+        "url": "https://logtube.jp/variety/34344/"
+      },
+      {
+        "date": "2018年1月16日",
+        "title": "みずにゃん刑事告訴で家宅捜索、PC/iPhone押収",
+        "text": "みずにゃんが名誉毀損で刑事告訴し、2018年1月に警察がコレコレ宅を家宅捜索、PCとiPhoneを押収したと報じられた。配信での暴言・過去暴露が原因とされ、本人が説明配信を行った。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=4fC4I9qY-R8"
+      },
+      {
+        "date": "2018年ごろ",
+        "title": "本田翼・ねこてん配信へのコレリス突撃で荒らし誘導疑惑",
+        "text": "コレコレが配信中に本田翼やねこてんの配信に触れたことで、コレリスが相手のコメント欄へ押しかけ『コレコレから』等で埋まる事態が起きたと整理されている。本人は荒らしを止めるよう言っていたが、荒らし誘導疑惑として敵視されるパターンになった。",
+        "imageUrl": "",
+        "url": "https://logtube.jp/variety/34344/4/"
+      },
+      {
+        "date": "2018年2月17日",
+        "title": "ツイキャス史上初のサポーター20万人突破",
+        "text": "ツイキャスで史上初のサポーター20万人突破とされる。YouTube以前からライブ配信で桁違いの集客力を持っていたことを示す節目。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2018年8月5日",
+        "title": "アイドルグループ Kore:ct を結成",
+        "text": "配信者からアイドルプロデュースへ進出。ネット発アイドルとしてKore:ctを結成し、本人の活動範囲が配信外にも広がる。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2019年2月8日",
+        "title": "YouTube動画100本以上を突然削除",
+        "text": "YouTube動画を大量削除。のちにUUUMなどから動画削除の圧力を受けていたと本人が主張し、YouTube界隈との緊張関係を象徴する話題になった。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2019年8月26日",
+        "title": "Kore:ctとの契約終了",
+        "text": "プロデュースしていたKore:ctとの契約が終了。ネット発アイドル運営の難しさや、コレコレのプロデューサー路線の一区切りとして語れる。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2019年6月13日",
+        "title": "Kore:ctメンバー6人中5人脱退、グループ崩壊騒動",
+        "text": "コレコレプロデュースのアイドルグループKore:ctで、メンバー半数以上が相次いで脱退し、6人中5人が抜ける事実上の崩壊状態としてユーチュラが報じた。配信者のアイドル運営が炎上・混乱した代表例。",
+        "imageUrl": "https://imgc.eximg.jp/i%3Dhttps%253A%252F%252Fs.eximg.jp%252Fexnews%252Ffeed%252FPrtimes%252FPrtimes_2019-06-24-34858-18%252FPrtimes_2019-06-24-34858-18_1.jpg,quality%3D70,type%3Djpg",
+        "url": "https://yutura.net/news/archives/tag/%E3%82%B3%E3%83%AC%E3%82%AF%E3%83%88"
+      },
+      {
+        "date": "2019年8月21日",
+        "title": "Kore:ct前運営会社との金銭問題を公表、新グループ立ち上げへ",
+        "text": "ライバー側がKore:ct前運営会社との契約終了と後継グループ立ち上げを発表。未払い報酬が数百万円規模に及ぶことや、コレコレへの不信感を煽る行為があったと説明され、運営トラブルとして話題になった。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/12516"
+      },
+      {
+        "date": "2019年8月31日",
+        "title": "『コレって恋ですか?』を結成",
+        "text": "新たな配信ネイティブアイドルとして『コレって恋ですか?』を結成。暴露配信者でありながらアイドル運営も続ける二面性が強まる。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/@korekoi"
+      },
+      {
+        "date": "2019年9月ごろ",
+        "title": "YouTube登録者100万人突破",
+        "text": "YouTube登録者が100万人を突破。ニコ生・ツイキャス出身の生主から、YouTube上でも大規模な告発系配信者へ移行した節目。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2019年11月",
+        "title": "ぷぅさんの女性関係を配信で話し、3年間絶縁",
+        "text": "相方的存在だったぷぅさんについて、コレコレが配信中に『コレリスとオフパコしている』趣旨で話したことにぷぅさんが激怒。以後3年間絶縁状態となり、2023年1月に通話で和解したと報じられた。",
+        "imageUrl": "https://pbs.twimg.com/media/HEP8MHgbIAEn8X6.jpg",
+        "url": "https://yutura.net/news/archives/87874"
+      },
+      {
+        "date": "2020年3月",
+        "title": "へずまりゅう話を信じてがーどまんを一方的に批判、早とちり炎上",
+        "text": "へずまりゅうからスマホを壊されたという話を聞いたコレコレが、がーどまん側を責める動画を出したが、後にへずま側の説明が不正確だったとされ、早とちりで誤解を生んだとして炎上したと整理されている。",
+        "imageUrl": "",
+        "url": "https://logtube.jp/variety/34344/4/"
+      },
+      {
+        "date": "2020年7月18日",
+        "title": "ゆりにゃ・戦慄かなの疑惑配信で同接9.6万人超",
+        "text": "YouTube闇ニュースの同接記録更新回。芸能・インフルエンサー周辺の疑惑を大人数がリアルタイムで追う、現在の告発配信スタイルが固まる。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=Ve90pGniEKw"
+      },
+      {
+        "date": "2020年9月8日",
+        "title": "てんちむ・かねこあや騒動で同接12.3万人超",
+        "text": "てんちむ・かねこあや騒動を扱った配信で自身の同接記録を更新。視聴者が証言・証拠・反応を同時に追う『公開検証型』の強さが見えた回。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=0ybG91X2y28"
+      },
+      {
+        "date": "2020年10月30日",
+        "title": "楽曲『炎上パンチ』公開",
+        "text": "自身の暴露・炎上イメージをそのままエンタメ化した楽曲。タイトル自体がコレコレの番組イメージを象徴しており、図鑑のフックとして強い。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=H2gx1cy67rs"
+      },
+      {
+        "date": "2021年1月13日",
+        "title": "X/Twitter本アカウントが虚偽通報で凍結",
+        "text": "ユーチュラが、フォロワー44万人規模だったメインアカウント凍結を報道。本人は虚偽通報と説明し、法的措置を取ると表明した。告発配信者ならではの敵の多さが表面化。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/45006"
+      },
+      {
+        "date": "2021年1月21日",
+        "title": "ワタナベマホト問題を暴露、UUUM契約解除・引退・逮捕へ波及",
+        "text": "ワタナベマホトが未成年女性に不適切画像を要求していた件を生配信で暴露。UUUM契約解除、YouTube BAN、引退、のちの逮捕報道まで連鎖し、コレコレの代表的な暴露案件になった。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=XmhDPdJStJE"
+      },
+      {
+        "date": "2021年1月28日",
+        "title": "マホト暴露への批判に反論",
+        "text": "マホト騒動で、暴露したコレコレ側にも賛否が集まる。ユーチュラ記事では、本人が『悪さしなければ何もない』趣旨で反論した流れが紹介されている。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/46074"
+      },
+      {
+        "date": "2021年6月24日",
+        "title": "あやなん・コムドットら31人宴会騒動を扱い同接19.7万人超",
+        "text": "緊急事態宣言下の人気YouTuber大人数宴会を扱い、大きな話題に。YouTube界隈全体を巻き込む炎上で、コレコレ配信が情報ハブ化した。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=HFLGR8orx-A"
+      },
+      {
+        "date": "2021年7月7日",
+        "title": "みっき～警察沙汰暴露で同接31.6万人超",
+        "text": "みきおだ・みっき～の警察沙汰を扱い、同接31.6万人超とされる。以後、コレコレの暴露配信は『人気者の活動を一夜で揺らす』規模として認識される。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=zulBfb3zVWc"
+      },
+      {
+        "date": "2021年10月8日",
+        "title": "初書籍『告発』発売",
+        "text": "宝島社から『告発 誰も晒せなかったSNSのヤバすぎる闇』を刊行。投資詐欺、闇バイト、未成年淫行、悪徳インフルエンサーなど、配信で扱ってきたSNSの闇を本にまとめた。",
+        "imageUrl": "https://kai-you.net/press/img/61Pi9s5GBQL-e1632993843407.jpeg",
+        "url": "https://kai-you.net/article/81593"
+      },
+      {
+        "date": "2021年12月ごろ",
+        "title": "週刊誌で年収・暴露配信観を語る",
+        "text": "週刊誌系記事で、配信だけで年収1億円規模と語り、暴露だけでなく本人に落とし前をつけさせるまでが役割だと説明。『ネット界の文春砲』的な立ち位置を自ら言語化した。",
+        "imageUrl": "",
+        "url": "https://news.livedoor.com/article/detail/21349452/"
+      },
+      {
+        "date": "2022年1月13日",
+        "title": "客に暴言を吐く飲食店へ突撃、警察出動のトラブルに",
+        "text": "視聴者から「暴言を吐かれた」と相談があった飲食店をコレコレが訪問。店長との口論から警察が出動する事態になり、猫こねこも参加した突撃検証回としてユーチュラが報じた。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/67753"
+      },
+      {
+        "date": "2022年3月9日",
+        "title": "ななもり。不倫疑惑を暴露、同接35.9万人超",
+        "text": "すとぷり・ななもり。の不倫疑惑を扱い、YouTubeLiveで同接35.9万人超を記録。ファンコミュニティを揺らす巨大暴露案件として広がった。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=bTYIqHLG548"
+      },
+      {
+        "date": "2022年3月11日",
+        "title": "ななもり。続報で同接51万9886人",
+        "text": "ユーチュラ記事で、3月11日の続報配信が同時接続51万9886人を記録し、一般人として国内最高同接級だったと報じられた。コレコレ最大級の数字ネタ。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=1zlMg9Ljz-g"
+      },
+      {
+        "date": "2022年3月18日",
+        "title": "民放ドラマ初出演、SNSの存在感が地上波ドラマへ",
+        "text": "日本テレビ系ドラマ『卒業式に、神谷詩子がいない』に出演。SNSで圧倒的存在感を持つ人物として、物語の中心人物を追い詰める立ち位置を演じると報じられた。",
+        "imageUrl": "",
+        "url": "https://www.oricon.co.jp/news/2228217/full/"
+      },
+      {
+        "date": "2022年8月11日",
+        "title": "同接51万記録を本人が発表し、視聴者から反響",
+        "text": "本人がXで、一般人として国内最高同接記録保持者になったと発表。祝福コメントも集まり、配信界の王というブランドをさらに強めた。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/80228"
+      },
+      {
+        "date": "2023年1月11日",
+        "title": "『告発』文庫化、ヒカル対談も追加",
+        "text": "宝島社から『告発』文庫版が発売。増補改訂、新ネタ、秘蔵写真、ヒカルとの対談『炎上させる者 VS 炎上する者』を収録し、暴露配信者としての文脈が出版物として残る。",
+        "imageUrl": "https://bookweb.kinokuniya.co.jp/imgdata/large/4299038290.jpg",
+        "url": ""
+      },
+      {
+        "date": "2023年1月5日",
+        "title": "ぷぅさんと3年ぶりに通話し和解",
+        "text": "2019年の女性関係暴露で絶縁していたぷぅさんと、配信中に3年ぶりに通話。双方が当時を振り返り、和解が成立したと報じられた。過去炎上の決着回として入れる。",
+        "imageUrl": "https://livedoor.blogimg.jp/game_talk-69cw1tk0/imgs/4/7/47f4cd5e.png",
+        "url": "https://yutura.net/news/archives/87874"
+      },
+      {
+        "date": "2023年5月",
+        "title": "ニコニコチャンネル配信を終了し、有料配信軸を移す",
+        "text": "長く続いたニコニコチャンネル配信を2023年5月までで終了。以後、ツイキャスのメンバーシップによる有料配信へ重心を移していく。",
+        "imageUrl": "",
+        "url": ""
+      },
+      {
+        "date": "2023年8月8日",
+        "title": "花火大会の場所取り注意動画がTikTokで500万再生級に",
+        "text": "ユーチュラの人気動画一覧で、花火大会の場所取り注意動画が『TikTokで500万再生』として紹介され、YouTubeでも1700万再生超級の代表動画になっている。街頭注意系の強さが再燃。",
+        "imageUrl": "",
+        "url": "https://yutura.net/channel/4882/popular/"
+      },
+      {
+        "date": "2023年7月24日",
+        "title": "偽物ポケカを並べる祭りくじ店へ突撃、暴行被害に",
+        "text": "祭りくじの闇を検証する動画で、偽物とみられる高額ポケカを並べる屋台にコレコレと猫こねこが突撃。店員にマスクを剥がされるなど暴行を受けたとユーチュラが報じ、被害届を望む声も相次いだ。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/97935"
+      },
+      {
+        "date": "2024年1月ごろ",
+        "title": "110万円の純金TENGA購入が年末振り返りに入る話題に",
+        "text": "コレコレNEWSの2024年振り返りで、110万円の純金TENGA購入が1年の本人ニュースとして紹介。高額ネタ・下ネタ・話題性が混ざったコレコレらしい小ネタ。",
+        "imageUrl": "",
+        "url": "https://yutura.net/channel/65042/popular/KN5rF8HaNP8/"
+      },
+      {
+        "date": "2024年7月14日",
+        "title": "温泉の男湯で盗撮被害を告白",
+        "text": "ユーチュラが、コレコレが高級温泉旅館の男湯で女性に盗撮されたと配信で明かした件を報道。本人が被害者側になったネットニュース化案件。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/118410"
+      },
+      {
+        "date": "2024年9月17日",
+        "title": "ゆりにゃがコレコレへの告訴状提出を発表",
+        "text": "ゆりにゃがXで、コレコレに対する告訴状を提出し警察が捜査開始したと報告。コレコレも『僕も戦います』と応じ、暴露する側が告訴される側になる大きな話題になった。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/122909"
+      },
+      {
+        "date": "2024年10月18日",
+        "title": "TikTok LIVE提携事務所『Korective』を設立",
+        "text": "株式会社ライバーが、コレコレによるTikTok LIVE提携事務所Korective設立を発表。次世代の配信王を育てる立場に回ったことで、配信者育成側としても話題化。",
+        "imageUrl": "https://prcdn.freetls.fastly.net/release_image/34858/106/34858-106-7fe5f77e6721cdc4e868886be65b36ec-1483x1364.png",
+        "url": "https://news.allabout.co.jp/articles/o/86138/"
+      },
+      {
+        "date": "2024年11月2日",
+        "title": "Korectiveに2週間で100名以上が参加",
+        "text": "ユーチュラが、Korectiveに発表から2週間で100名以上のライバーが所属したと報道。ポケカメン、kimonoちゃん、ノック、へずまりゅうらの名前も出て、界隈横断の動きになった。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/126242"
+      },
+      {
+        "date": "2024年12月22日",
+        "title": "有馬記念で600万円全ロスとして話題化",
+        "text": "競馬まとめで、有馬記念2024にコレコレが600万円を賭けて全ロスした配信者の一人として紹介。高額ギャンブル企画として視聴者が食いつく話題。",
+        "imageUrl": "",
+        "url": "https://www.momopkm.com/entry/20241223k"
+      },
+      {
+        "date": "2025年1月29日",
+        "title": "TikTok盾イベントの不正行為を告発、TikTok引退も示唆",
+        "text": "All Aboutニュースが、コレコレがTikTok盾イベント参加者の不正行為を告発し、運営対応への不信感からTikTok引退も示唆した件を報道。視聴者へ拡散を呼びかけたことも話題に。",
+        "imageUrl": "https://ix-news.aacdn.jp/aa_news/article/2025/01/31/679c686fc2e22.png",
+        "url": "https://news.allabout.co.jp/articles/o/89835/"
+      },
+      {
+        "date": "2025年4月18日",
+        "title": "大阪万博を辛口レポート、生配信ルール錯綜に困惑",
+        "text": "ポケカメン、猫こねこと大阪・関西万博を訪問。生配信や収益化の可否について公式サイト・問い合わせ・現場スタッフの説明が食い違い、コレコレ側が「万博側が悪くない？」と困惑する動画として話題になった。",
+        "imageUrl": "https://livedoor.blogimg.jp/neko_dan/imgs/4/a/4a3c4d28.jpg",
+        "url": "https://yutura.net/news/archives/133935"
+      },
+      {
+        "date": "2025年4月ごろ",
+        "title": "くら寿司“避妊具テロ”関係者がコレコレ配信に出演していた件が後日報道",
+        "text": "くら寿司の皿回収口に開封済み避妊具を置いた写真が炎上した事件で、関係者の1人とみられる人物が猫こねこ経由でコレコレ配信に出演していたとユーチュラが整理。後日の書類送検報道で再注目された。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/136861"
+      },
+      {
+        "date": "2025年2月14日",
+        "title": "120kg・肉離れ・車椅子生活を投稿しダイエット宣言",
+        "text": "All About記事で、本人が好き放題食べ続けて120kg、外に出ず生放送する日々、肉離れで車椅子生活になったと投稿し、本気でダイエットすると宣言した流れが紹介されている。",
+        "imageUrl": "https://img.sirabee.com/wp-content/uploads/2025/02/sirabee20250214korekore.jpg",
+        "url": "https://news.allabout.co.jp/articles/o/90682/?page=2"
+      },
+      {
+        "date": "2025年2月20日",
+        "title": "『結婚します』投稿で祝福と疑念が殺到",
+        "text": "白いタキシードと花束の写真で『結婚します』と投稿し、祝福が多数集まる一方、過去の釣り報告から疑う声も出た。デイリースポーツでは9.2万いいね規模の反響として報じられた。",
+        "imageUrl": "https://getnews.jp/img/archives/2025/02/korekore250220.jpg",
+        "url": "https://www.daily.co.jp/gossip/2025/02/21/0018672758.shtml"
+      },
+      {
+        "date": "2025年2月21日",
+        "title": "結婚発表は『結婚相手募集』企画のフリだったと判明",
+        "text": "翌日に『結婚相手を募集します』という番組宣伝だったと明かし、『信用なくなる』『ひどいフリ』という反応も出た。コレコレらしい釣り・企画型バズとして使える。",
+        "imageUrl": "",
+        "url": "https://www.daily.co.jp/gossip/2025/02/21/0018672758.shtml"
+      },
+      {
+        "date": "2025年8月1日",
+        "title": "ゆりにゃ彼氏たいちくん被害主張の事実確認配信が226万再生級に",
+        "text": "ユーチュラの人気動画ページで、天宮しゅながゆりにゃの彼氏たいちくんから被害を受けたと主張する件を、コレコレが通話で事実確認する配信が226万再生超として確認できる。2025年の代表的な大型配信。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=GBsJdhg-1n0"
+      },
+      {
+        "date": "2025年9月4日",
+        "title": "『コレコレに暴露する』発言で相談者が脅迫容疑、本人が経緯説明",
+        "text": "ユーチュラが、コレコレに告発相談した女性が、相手に『コレコレに暴露する』と伝えたことで脅迫容疑の捜査を受けた件を報道。『コレコレに暴露』という言葉自体の影響力が事件化した例。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/141319"
+      },
+      {
+        "date": "2025年9月5日",
+        "title": "アインシュタイン稲田DM疑惑で不正ログイン犯逮捕、コレコレが謝罪・自粛表明",
+        "text": "J-CASTが、稲田のDM疑惑をめぐり、不正ログイン犯逮捕後にコレコレが稲田へ謝罪し、警察から連絡が来たためSNS活動を自粛すると発表した流れを報道。コレコレ自身も大きく炎上した案件。",
+        "imageUrl": "https://i.imgur.com/jjL1cjI.png",
+        "url": "https://www.j-cast.com/2025/09/07507259.html?p=all"
+      },
+      {
+        "date": "2025年9月6日",
+        "title": "緊急生放送で『今炎上中なんでね、僕』と釈明",
+        "text": "J-CAST記事で、緊急生放送の冒頭に『炎上パンチ』を流し、稲田の件で自分が炎上している現状を語ったと報じられる。本人は事前確認や注意喚起をしたと説明し、ネット上の批判に反論した。",
+        "imageUrl": "",
+        "url": "https://www.j-cast.com/2025/09/07507259.html?p=all"
+      },
+      {
+        "date": "2025年9月29日",
+        "title": "折原から4年にわたる嫌がらせを受けたと告白",
+        "text": "ユーチュラが、エンターテイナー折原から住民票晒し、虚偽の著作権侵害申し立て、虚偽チラシ配布、BAN工作などを受けてきたとコレコレが語った件を報道。暴露系同士の泥沼として大きい。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/142477"
+      },
+      {
+        "date": "2025年9月29日",
+        "title": "DEATHDOL NOTE創設者がコレコレ配信に顔出し登場",
+        "text": "ユーチュラが、暴露系アカウントDEATHDOL NOTE創設者がコレコレ配信に登場し、分業体制や収益を明かした件を報道。告発配信者コレコレの番組に、別の暴露系が乗り込む構図として話題化。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/142525/2"
+      },
+      {
+        "date": "2026年1月1日",
+        "title": "多屋来夢との性的関係をKICK配信で告白",
+        "text": "KICK配信で、モデルの多屋来夢と性的関係を持ったことを本人が告白。不同意性交のような噂をかけられたことへの説明として話し始め、来夢本人と猫こねこ@渡部も通話に参加したとユーチュラが報じている。コレコレ本人が女性トラブルの中心になった大型炎上。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/147616"
+      },
+      {
+        "date": "2026年1月2日",
+        "title": "『性欲に負けました』発言、避妊具なし問題で批判が集中",
+        "text": "ユーチュラ記事では、コレコレが多屋来夢から迫られて関係を持ったと説明し、『性欲に負けました』と発言した流れが整理されている。関係時に避妊具を使用しなかったことも明かされ、普段その手の男性を厳しく批判してきた本人への失望・批判がXで広がった。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/147616"
+      },
+      {
+        "date": "2026年1月2日",
+        "title": "Xで多屋来夢騒動が画像付きニュースとして拡散",
+        "text": "Yahoo!リアルタイム検索では、ユーチュラ公式Xによる『コレコレ、美人モデルの多屋来夢と関係持ったと告白』の画像付き投稿が確認できる。リポスト・いいねも付き、配信外のX上でも見出し化して拡散された。",
+        "imageUrl": "",
+        "url": "https://search.yahoo.co.jp/realtime/search?ei=UTF-8&ifr=tl_unit&p=%E5%A4%9A%E5%B1%8B%E6%9D%A5%E5%A4%A2+%E3%82%B3%E3%83%AC%E3%82%B3%E3%83%AC&rkf=1"
+      },
+      {
+        "date": "2026年1月5日",
+        "title": "『コキコキ』あだ名化、性的炎上がネタ化",
+        "text": "多屋来夢との性的トラブルをきっかけに、コレコレに『コキコキ』というあだ名が付いたと用語解説サイトでまとめられている。単なる交際報道ではなく、下半身スキャンダルがリスナー間でネタ化・呼称化した点が重要。",
+        "imageUrl": "",
+        "url": "https://nushipedia.com/19598/"
+      },
+      {
+        "date": "2026年1月5日",
+        "title": "多屋来夢騒動に続き、セフレ女性トラブルも暴露される",
+        "text": "kimonoちゃん配信で、コレコレのセフレだったという女性のタレコミが扱われたとユーチュラが報道。多屋来夢との騒動直後に別の女性トラブルが重なり、本人の性的スキャンダルが連続炎上した。",
+        "imageUrl": "",
+        "url": "https://yutura.net/news/archives/147780"
+      },
+      {
+        "date": "2026年7月10日",
+        "title": "ふわっち違法賭博スキャンダルをコレコレが追及",
+        "text": "cokiのコレコレタグで、ふわっち違法賭博スキャンダルをコレコレが追及し、トップ配信者や反社カジノ斡旋疑惑が大炎上した記事が掲載されている。2026年の配信者界隈を揺らした追及案件。",
+        "imageUrl": "https://coki.jp/wp-content/uploads/2026/07/whowatch.jpg",
+        "url": "https://coki.jp/article/column/89120/"
+      },
+      {
+        "date": "2026年7月31日",
+        "title": "0歳児がいるゴミ屋敷シングルマザー回、警察・弁護士介入トラブルへ",
+        "text": "メインチャンネルで、0歳児がいるゴミ屋敷のシングルマザー相談を扱った動画が公開。警察・弁護士介入のトラブルに発展する内容として、2026年夏の大型相談回になった。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=mN5Qr-fxe6o"
+      },
+      {
+        "date": "2026年9月1日",
+        "title": "虚言アイドル妊娠中のお腹確認回が公開直後から大型再生",
+        "text": "メインチャンネルで、ホストと妄想恋愛する虚言アイドル女の相談回を公開。ビデオ通話で妊娠中のお腹を確認する展開として、公開直後から76万再生超の大型動画になった。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=PgTZlXjzuok"
+      },
+      {
+        "date": "2026年8月時点",
+        "title": "YouTube登録者247万人、総再生14億回超の大型チャンネルに",
+        "text": "ユーチュラのチャンネルページで、登録者247万人、動画再生14億3843万回超、動画673本と確認できる。現在もYouTube上でトップ級の告発・相談配信者として動いている。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/@korekorech/videos"
+      },
+      {
+        "date": "2026年8月12日",
+        "title": "誕生日プレゼント開封配信に豪華ゲスト、犯罪な“モノ”で警察通報",
+        "text": "ユーチュラ最新動画一覧で、松本人志、ヒカル、加藤純一、有名アーティストなど豪華ゲスト参戦の誕生日プレゼント開封配信が157万再生超として確認できる。誕生日枠まで事件化するコレコレらしい直近話題。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=ZOl0Rieos4A"
+      },
+      {
+        "date": "2026年8月24日",
+        "title": "被害300万円・発狂して家を破壊する母親の相談動画が123万再生超",
+        "text": "ユーチュラ最新動画一覧で、被害300万円の相談動画が123万再生超として確認できる。現在も視聴者相談・家庭トラブル・詐欺被害系の大型ネタで数字を取っている。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=GukkP0kcb3Q"
+      }
+    ],
+    "intro": "ニコ生・ツイキャス・YouTubeをまたいで巨大化した、日本屈指の告発系ライブ配信者。\n\n鼻マスク、毒舌、通話凸、視聴者相談、証拠確認、相手への直接確認を組み合わせるスタイルで、『ライブ配信の王』『ネット界の文春砲』『日本一、視聴者の声を聞く男』とも紹介される。\n\n配信の核は、相談者から来た告発や被害相談を生放送上で整理し、当事者へ通話し、視聴者の集合知も使いながら事実確認していく公開検証型の番組性。\n\n代表的な話題は、ニコ生四大癌時代、ツイキャス王、タバコポイ捨て注意、みずにゃん刑事告訴と家宅捜索、コレリス突撃による荒らし誘導疑惑、ぷぅさん絶縁、がーどまん早とちり炎上、ワタナベマホト問題、コムドット/あやなん宴会騒動、みっき～警察沙汰、Kore:ct崩壊と前運営会社の金銭問題、飲食店突撃で警察出動、偽物ポケカ祭りくじ店突撃で暴行被害、ななもり。不倫疑惑と同接51万9886人、ゆりにゃ告訴、TikTok盾イベ不正告発、結婚発表釣り、アインシュタイン稲田DM疑惑をめぐる炎上、折原からの住民票晒し・BAN工作被害、多屋来夢との性的関係告白と『コキコキ』あだ名化、セフレ女性トラブル、ふわっち違法賭博スキャンダル追及など。\n\n紹介するなら『暴露をエンタメに変え、炎上を裁判所のように実況し、自分自身も炎上と被害の中心に立ち続ける配信界の巨大装置』。",
+    "id": "korekore",
+    "bodyImageUrl": ""
+  },
+  {
+    "name": "せいZ",
+    "yomi": "せいゼット",
+    "photoUrl": "",
+    "activePeriod": "ふわっちを中心に活動し、2026年時点ではKICKでも大型配信を展開。Xは2021年9月開設の @seiz1234 が確認できる。",
+    "style": "ふわっち / KICK / 雑談 / 外配信 / リア凸 / ミラー / 配信者界隈ニュース / Z界 / クレイジーパピヨン",
+    "birth": "",
+    "origin": "大阪府在住と紹介される",
+    "sites": [
+      {
+        "name": "X",
+        "id": "@seiz1234"
+      },
+      {
+        "name": "KICK",
+        "id": "kick.com/seiz"
+      },
+      {
+        "name": "ツイキャス",
+        "id": "@seiz1234 / @seiz12345"
+      },
+      {
+        "name": "ふわっち",
+        "id": "せいZ / せいZクレイジーパピヨン"
+      }
+    ],
+    "videos": [
+      {
+        "title": "せいZ、柔道3段MKと対決して肩鎖関節脱臼（2020年5月）",
+        "url": "https://gochmatome.livedoor.blog/archives/6505443.html"
+      },
+      {
+        "title": "せいZ、40時間不眠とMARIAとの別離手続き（2026年8月）",
+        "url": "https://www.youtube.com/watch?v=y_tS3KXaZIM"
+      },
+      {
+        "title": "せいZ、久永小太郎暴行騒動をミラーし被害届の流れを追う（2026年8月）",
+        "url": "https://www.youtube.com/watch?v=CRCe-jC5u9w"
+      },
+      {
+        "title": "せいZ、養分伊藤拉致事件の容疑者逮捕速報を配信で扱う（2026年7月）",
+        "url": "https://www.youtube.com/watch?v=kuJTchyujC8"
+      },
+      {
+        "title": "せいZ、違法賭博問題でゼキシンから住所要求の連絡を受ける（2026年7月）",
+        "url": "https://www.youtube.com/watch?v=EzQnGgAiAXA"
+      },
+      {
+        "title": "せいZ、違法賭博問題で配信者たちがパニック（2026年7月）",
+        "url": "https://www.youtube.com/watch?v=bd4ZU51eEVc"
+      },
+      {
+        "title": "せいZ、脅迫捏造発覚のゼキシンと通話（2026年7月）",
+        "url": "https://www.youtube.com/watch?v=6RH53WieMUk"
+      },
+      {
+        "title": "せいZ、ぱるぱる違法賭博騒動と機長宅居候問題をミラー（2026年7月）",
+        "url": "https://www.youtube.com/watch?v=tn0V1SNKpXw"
+      },
+      {
+        "title": "せいZ、坂口杏里のホテル暮らし脱出相談に関与（2026年7月）",
+        "url": "https://www.youtube.com/watch?v=Hu8Rq4QEpXk"
+      },
+      {
+        "title": "ナカムラ枠「たむがせいZをボコボコした！？」（KICK VOD）",
+        "url": "https://kick.com/nakamurakundesu/videos/01a00203-a360-78f1-816f-a4a56c1476e7"
+      },
+      {
+        "title": "kimonoちゃん枠「せいZ暴走で現在ヤバイことに」（KICK履歴）",
+        "url": "https://www.kick-active-checker.site/kimono_chan/history"
+      }
+    ],
+    "timeline": [
+      {
+        "date": "2020年5月26日",
+        "title": "柔道3段MKと対決、肩鎖関節脱臼",
+        "text": "ふわっち配信『神戸の柔道家を倒しにきた』で柔道3段のMKと対決し、豪快に投げられて右肩を負傷。翌日に肩鎖関節脱臼、全治6週間と報告され、身体を張る配信者として話題になった。",
+        "imageUrl": "",
+        "url": "https://gochmatome.livedoor.blog/archives/6505443.html"
+      },
+      {
+        "date": "2021年5月13日",
+        "title": "ツイキャス『伝説の誕生日会』が4時間・4万再生級で残る",
+        "text": "ツイキャス @seiz12345 に、4時間配信『伝説の誕生日会』が人気録画として残っている。ふわっち以外でも、濃い固定リスナーを抱えていた初期の素材。",
+        "imageUrl": "",
+        "url": "https://twitcasting.tv/seiz12345"
+      },
+      {
+        "date": "2021年7月9日",
+        "title": "ツイキャスに『すみませんでした。』録画",
+        "text": "@seiz12345 の人気録画に、10分台の『すみませんでした。』が残る。詳細文脈は限定的だが、謝罪・釈明系の本人素材として年表に置ける。",
+        "imageUrl": "",
+        "url": "https://twitcasting.tv/seiz12345"
+      },
+      {
+        "date": "2021年7月21日",
+        "title": "『伝説の殴られ屋』としてツイキャス録画化",
+        "text": "ツイキャス @seiz12345 のプロフィール上で『伝説の殴られ屋』が確認できる。殴られ屋・体当たり・外配信系のキャラを示す古いアーカイブ。",
+        "imageUrl": "",
+        "url": "https://twitcasting.tv/seiz12345"
+      },
+      {
+        "date": "2021年9月",
+        "title": "Xアカウント @seiz1234 を開設",
+        "text": "Xプロフィール系アーカイブで、@seiz1234 は2021年9月開設、フォロワー約2.5万人と確認できる。プロフィール文は『配信者に近道はねぇ！』で、KICKへの導線も掲載。",
+        "imageUrl": "",
+        "url": "https://mobile.twstalker.com/seiz1234"
+      },
+      {
+        "date": "2023年8月7日",
+        "title": "ツイキャス録画『ライブ #773791741』が6万再生級",
+        "text": "@seiz1234 のツイキャス人気録画に、2023年8月7日の4時間配信が6万再生級で残る。ふわっち外でも強い閲覧を集めた記録。",
+        "imageUrl": "",
+        "url": "https://twitcasting.tv/seiz1234/movie/821710906"
+      },
+      {
+        "date": "2024年1月6日",
+        "title": "『岡山の虚言女成敗する』が3.1万再生級",
+        "text": "ツイキャス人気録画に『岡山の虚言女成敗する』が残り、3万再生超として確認できる。相談・成敗・界隈トラブル処理系のせいZらしい素材。",
+        "imageUrl": "",
+        "url": "https://twitcasting.tv/seiz1234/movie/821710906"
+      },
+      {
+        "date": "2024年1月11日",
+        "title": "『加川さんに位置情報送ったよ』が11万再生級",
+        "text": "ツイキャス @seiz1234 の人気録画で『加川さんに位置情報送ったよ』が11万再生級として確認できる。外配信・位置情報・他配信者絡みで大きく見られた回。",
+        "imageUrl": "",
+        "url": "https://twitcasting.tv/seiz1234/movie/821710906"
+      },
+      {
+        "date": "2024年1月",
+        "title": "ふわっち冬イベント、血液型王AB型などで1位",
+        "text": "ライバー探検隊のまとめで、2024年1月にデイリーランキング1位、ふわっち血液型王AB型グッズフリー1位、冬の満腹フェスティバル前半総合1位などが確認できる。",
+        "imageUrl": "",
+        "url": "https://livertankentai.com/%E6%9C%AA%E5%88%86%E9%A1%9E/whowatch-reputation"
+      },
+      {
+        "date": "2024年4月",
+        "title": "WGP・マンスリーなどふわっち上位を連発",
+        "text": "2024年4月にWGP WhoWatch GRAND PRIX 1位、マンスリーランキング1位、ふわっちスーパーヒーローズ後半フリー1位などを獲得。課金ランキング系で一気に上位常連化した時期。",
+        "imageUrl": "",
+        "url": "https://livertankentai.com/%E6%9C%AA%E5%88%86%E9%A1%9E/whowatch-reputation"
+      },
+      {
+        "date": "2024年5月",
+        "title": "ふわっちマンスリー1位、年間獲得ポイント1.2億pt級へ",
+        "text": "ライバーユナイトの紹介で、年間獲得ポイント121,982,145pt、月間ランク1位×5・2位×1とされる。ふわっちトップライバーとしての数字が固まった。",
+        "imageUrl": "",
+        "url": "https://note.com/liverunite/n/n8bc36d9dab57"
+      },
+      {
+        "date": "2024年6月",
+        "title": "ふわっち6月イベントでも複数1位",
+        "text": "2024年6月時点で、デイリーランキング1位、BAR WhoWatch 1位、ゆめふわランキング1位、初夏のふわっち祭り総合1位などが紹介される。ふわっち内で名前が強く通る時期。",
+        "imageUrl": "",
+        "url": "https://livertankentai.com/%E6%9C%AA%E5%88%86%E9%A1%9E/whowatch-reputation"
+      },
+      {
+        "date": "2024年7月時点",
+        "title": "大阪府在住・43歳ライバーとして紹介される",
+        "text": "ライバー探検隊で、せいZクレイジーパピヨンは大阪府在住の男性ライバー、2024年7月時点で43歳、好きなものはお笑いと紹介されている。",
+        "imageUrl": "",
+        "url": "https://livertankentai.com/%E6%9C%AA%E5%88%86%E9%A1%9E/whowatch-reputation"
+      },
+      {
+        "date": "2024年12月",
+        "title": "ふわっち大賞2024、夜配信カテゴリに名前が載る",
+        "text": "ふわっち大賞2024の配信時間帯賞・夜配信カテゴリに『せいZ』の名前が掲載。ふわっち公式側の年間文脈でも存在感が確認できる。",
+        "imageUrl": "",
+        "url": "https://whowatch.tv/s/202412-award/"
+      },
+      {
+        "date": "2025年8月19日",
+        "title": "ツイキャス復帰/配信で6.8万再生級",
+        "text": "@seiz1234 のツイキャス録画『モイ！iPhoneからキャス配信中』が45分で6.8万再生級として残る。KICK・ふわっちだけでなくツイキャスでも注目を取れる状態。",
+        "imageUrl": "",
+        "url": "https://twitcasting.tv/seiz1234/movie/821710906"
+      },
+      {
+        "date": "2026年1月21日",
+        "title": "コレコレ枠で『友達を売った』件を謝罪、配信休止を表明",
+        "text": "まとめアーカイブでは、コレコレ枠後にせいZが『友達を裏切って配信のネタにしてしまった』『当分、配信をお休みします』と謝罪した投稿が記録されている。本人中心の炎上・反省回。",
+        "imageUrl": "",
+        "url": "https://gochmatome.livedoor.blog/archives/2026-01-21.html"
+      },
+      {
+        "date": "2026年1月22日",
+        "title": "養分伊藤事件の裏側でぱるぱるとせいZが決裂",
+        "text": "養分伊藤の事件騒動で、裏側で動いていたぱるぱるが配信し、せいZとの衝突、養分脱出、保護直後の様子などを語ったと切り抜き概要に残る。Z界・ふわっち上位勢の人間関係が割れた回。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=IvDq4PpT2Dc"
+      },
+      {
+        "date": "2026年4月16日",
+        "title": "コレコレ主催カラオケ大会で顔芸・語録が話題",
+        "text": "Xトレンド要約で、コレコレ主催の第2回カラオケ大会にポケカメン、ノック、kimonoちゃん、せいZらが参加し、せいZの独特な顔芸と語録が大爆笑を呼んだと整理されている。",
+        "imageUrl": "",
+        "url": "https://x.com/i/trending/2044845992357613706"
+      },
+      {
+        "date": "2026年5月18日",
+        "title": "ルイージ逮捕後の暴言騒動で『もう名前出すな！』と叱責",
+        "text": "KP劇場の切り抜きで、パイナップルとのトラブルで逮捕されたルイージが再び元彼女に暴言を吐き、せいZが叱責した流れが確認できる。界隈トラブルに介入する役回りの素材。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=xT4j4GCilk8"
+      },
+      {
+        "date": "2026年7月5日",
+        "title": "坂口杏里のホテル暮らし脱出相談で関係修復の軸になる",
+        "text": "坂口杏里がホテル暮らしから脱出する相談回で、以前せいZがトーマスの家を提案したが、天ストとコラボしたことで関係が悪化し、関係修復したい流れが扱われた。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=Hu8Rq4QEpXk"
+      },
+      {
+        "date": "2026年7月9日",
+        "title": "ふわっち違法賭博スキャンダルで過去の関与を認める",
+        "text": "コレコレの緊急生放送をきっかけに、ふわっち大手配信者らの違法賭博疑惑が表面化。coki記事では、せいZが過去の関与を認めたとされ、ふわっちトップ層を巻き込む大炎上に入った。",
+        "imageUrl": "",
+        "url": "https://coki.jp/article/column/89120/"
+      },
+      {
+        "date": "2026年7月10日",
+        "title": "違法賭博問題への謝罪と反省が不十分と批判される",
+        "text": "coki記事では、せいZが投稿で過去の関与を認め反省を表明した一方、配信者たちの反応が不十分だとして批判が広がったと整理されている。本人の大きな炎上軸。",
+        "imageUrl": "",
+        "url": "https://coki.jp/article/column/89120/"
+      },
+      {
+        "date": "2026年7月11日",
+        "title": "違法賭博店関係者をにおわせる『住所教えて』連絡で緊迫",
+        "text": "違法賭博問題の最中、ゼキシンから『賭場について配信している人間の住所が知りたい』という連絡が来たとして、せいZが話を聞く配信が切り抜かれた。警告か圧力かという見せ場になった。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=EzQnGgAiAXA"
+      },
+      {
+        "date": "2026年7月12日",
+        "title": "違法賭博問題で配信者たちがパニック、怪情報が飛び交う",
+        "text": "元反社の瓜田純士が危険性を訴えた動画がバズり、名前が出た配信者は探されている等の怪情報も出回ったとKP劇場が整理。せいZは問題の中心近くでミラー・通話を続けた。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=bd4ZU51eEVc"
+      },
+      {
+        "date": "2026年7月12日",
+        "title": "ゼキシンの脅迫におわせLINEが捏造と発覚、通話で追及",
+        "text": "違法賭博店関係者をにおわせるLINEが、後に捏造だったと発覚。せいZがゼキシン、トーマスらと通話し、『なぜ反社におわせ？』と怒る展開が切り抜かれた。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=6RH53WieMUk"
+      },
+      {
+        "date": "2026年7月18日",
+        "title": "ぱるぱる違法賭博騒動、機長宅居候拒否問題をミラー",
+        "text": "ぱるぱるが上京後に機長宅へ居候する約束だったが、違法賭博を早く認めた機長が『ぱるぱるといたらまた遊びたくなる』と話し、判断が注目された。せいZはこれをKICKでミラーし、騒動の観測側に回った。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=tn0V1SNKpXw"
+      },
+      {
+        "date": "2026年7月22日",
+        "title": "養分伊藤拉致事件、容疑者逮捕速報を配信中に扱う",
+        "text": "1月に発生した養分伊藤拉致事件で容疑者2人逮捕のニュースが入り、せいZが配信中に速報として扱った。容疑者名を見て、以前から疑われていた配信者の本名ではないかと反応したことも切り抜かれた。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=kuJTchyujC8"
+      },
+      {
+        "date": "2026年8月3日",
+        "title": "久永小太郎騒動翌日、診断書・被害届で波紋",
+        "text": "久永小太郎をめぐる深夜から早朝の騒動の翌日、しんじのケガ、診断書、被害届、花屋たちの凸への異論などをせいZが配信で扱った。外配信界隈の暴行・警察沙汰を追う代表素材。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=VXuhPHQPtTg"
+      },
+      {
+        "date": "2026年8月4日",
+        "title": "KICKでピーク同接1万人超を記録",
+        "text": "配信ウォッチで、KICK『もんじょりのおっぱい飲みたい』がピーク10,271人、平均7,941人、配信時間9時間45分として記録されている。KICK移行後の数字として強い。",
+        "imageUrl": "",
+        "url": "https://www.stream-log.com/stream/kick/kick%3A57862800?peak_at=2026-08-04T03%3A45%3A00.971Z"
+      },
+      {
+        "date": "2026年8月4日",
+        "title": "久永小太郎暴行騒動をミラー、被害届の行方を追う",
+        "text": "久永小太郎とトラブルになってケガを負ったしんじの配信をせいZがミラー。診断書や被害届、相手側も訴える可能性などが話題になり、配信界隈の事件枠として伸びた。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=CRCe-jC5u9w"
+      },
+      {
+        "date": "2026年8月5日",
+        "title": "MARIAとの破局、引っ越し、不眠40時間でハイテンション化",
+        "text": "2年間交際したMARIAとの別れ、引っ越し、手続きが重なり、マンジャロ増量も絡んで40時間不眠のハイテンション状態になったと切り抜き概要で整理されている。本人の生活崩壊・破局ネタ。",
+        "imageUrl": "",
+        "url": "https://www.youtube.com/watch?v=y_tS3KXaZIM"
+      },
+      {
+        "date": "2026年8月7日",
+        "title": "せいZ命ネタで暴走中、警察沙汰かと大型配信で扱われる",
+        "text": "kimonoちゃんのKICK配信履歴で、『せいz命ネタで暴走中→警察沙汰か！？真相を暴露』という大型配信が確認できる。せいZ本人の命ネタ・暴走系が他大手配信でも中心トピックになった。",
+        "imageUrl": "",
+        "url": "https://www.kick-active-checker.site/kimono_chan/history"
+      },
+      {
+        "date": "2026年8月8日〜9日",
+        "title": "せいZへの暴露、ガチ犯罪・警察沙汰かと連日大型配信化",
+        "text": "kimonoちゃんのKICK履歴で、8月8日・9日に『せいzの暴露が来た』『ガチ犯罪！？警察沙汰か！？』と題した配信が連続し、最大1.8万人超の視聴を記録。本人周辺の炎上が界隈全体の見世物になった。",
+        "imageUrl": "",
+        "url": "https://www.kick-active-checker.site/kimono_chan/history"
+      },
+      {
+        "date": "2026年8月10日",
+        "title": "猫こねこ配信で「せいZさん住所をナカムラが晒す」と記録",
+        "text": "KickTrends JPの猫こねこ配信統計で、8月10日に『せいzさん住所をナカムラが晒す、Z会のゆゆ覚醒』という配信タイトルが確認できる。住所晒し・Z界内トラブルとして入れる。",
+        "imageUrl": "",
+        "url": "https://kicktrends.jp/streamer/56958473"
+      },
+      {
+        "date": "2026年8月15日",
+        "title": "ナカムラ枠で「たむがせいZをボコボコした！？」が28,000再生級",
+        "text": "KICKのVODページで、ナカムラ枠『たむがせいzをボコボコした！？何があった！？』が28,000再生級として確認できる。せいZ本人が殴り合い・暴力系の話題として扱われた回。",
+        "imageUrl": "",
+        "url": "https://kick.com/nakamurakundesu/videos/01a00203-a360-78f1-816f-a4a56c1476e7"
+      },
+      {
+        "date": "2026年8月30日",
+        "title": "kimonoちゃん枠で「せいZ暴走、現在ヤバイことに」と再炎上扱い",
+        "text": "kimonoちゃんのKICK履歴で、『せいz暴走で現在ヤバイことに』が最大14,823人規模の配信として確認できる。8月末時点でも、せいZ本人の暴走・炎上が大型配信の見出しになっていた。",
+        "imageUrl": "",
+        "url": "https://www.kick-active-checker.site/kimono_chan/history"
+      },
+      {
+        "date": "2026年9月1日",
+        "title": "せいZの塾生トーマス問題、kimonoちゃん枠で大型トピック化",
+        "text": "kimonoちゃんのKICK履歴で、『せいzの塾生トーマスをガチで…』という配信が最大23,014人規模として記録。Z界・塾生・周辺配信者を巻き込むせいZコミュニティ内トラブルとして追加する。",
+        "imageUrl": "",
+        "url": "https://www.kick-active-checker.site/kimono_chan/history"
+      },
+      {
+        "date": "2026年8月上旬",
+        "title": "MARIAとの破局をXで報告、長文ポストが反響",
+        "text": "Xプロフィールアーカイブで、せいZが2年間付き合ったMARIAと別れたことを長文で報告している。閲覧13万超規模の反応があり、配信の数字と私生活の両立に失敗したという文脈で語られた。",
+        "imageUrl": "",
+        "url": "https://mobile.twstalker.com/seiz1234"
+      },
+      {
+        "date": "2026年8月上旬",
+        "title": "元カノういたん切り抜きが900万表示級に拡散",
+        "text": "Xで、女性配信者の横にいる男性の切り抜きが拡散され、せいZ本人が『僕と僕の元カノのういたんです』と反応。元ポストは900万表示級で、過去の本人映像がバズった。",
+        "imageUrl": "",
+        "url": "https://mobile.twstalker.com/seiz1234"
+      },
+      {
+        "date": "2026年8月中旬",
+        "title": "Z界応援ソングを公開、リスナー集団『Z界』を可視化",
+        "text": "Xで『Z界応援ソングできました』と投稿し、11万表示級の反応。せいZ本人だけでなく、Z界という支援者・弟子・周辺配信者集団のブランドが表に出た。",
+        "imageUrl": "",
+        "url": "https://mobile.twstalker.com/seiz1234"
+      },
+      {
+        "date": "2026年8月17日〜23日",
+        "title": "日本で最も視聴された配信者TOP10に入る",
+        "text": "Hatchet Japanの投稿を本人がリポスト。2026年8月17日〜23日の日本配信者視聴時間ランキングで、加藤純一、コレコレ、布団ちゃん、SHAKAらに続き、せいZが8位として掲載された。",
+        "imageUrl": "",
+        "url": "https://mobile.twstalker.com/seiz1234"
+      },
+      {
+        "date": "2026年8月29日",
+        "title": "ふわっちピーク3,862人、『警固公園リア凸待ち』で2位",
+        "text": "配信ウォッチの日次ランキングで、ふわっち『本日18時から警固公園リア凸待ち』がピーク3,862人、同日ふわっち2位として記録された。KICKだけでなくふわっちでも数字が残る。",
+        "imageUrl": "",
+        "url": "https://stream-log.com/ranking/daily/2026-08-29"
+      },
+      {
+        "date": "2026年8月末",
+        "title": "『緊急入院しました』投稿が39万表示級",
+        "text": "Xプロフィールアーカイブで『緊急入院しました』投稿が39万表示級として確認できる。一方でYahooリアルタイム検索では『嘘orAI画像の可能性あり』と扱われるなど、命ネタ・入院ネタとして界隈で疑念込みで話題化した。",
+        "imageUrl": "",
+        "url": "https://search.yahoo.co.jp/realtime/search?btid=MjA0NDA2ODE3NzM2MjIwMjg1NA%3D%3D&ifr=tp_bz&p=%E3%81%9B%E3%81%84z&rkf=1"
+      }
+    ],
+    "intro": "ふわっち上位ライバーとして名前を広げ、2026年にはKICKでも1万人級の同接を出した男性配信者。\n\n『せいZクレイジーパピヨン』名義でも知られ、リア凸、外配信、雑談、ミラー、配信者界隈ニュース、身体を張る企画、濃い人間関係のトラブル処理を主戦場にする。\n\n2024年はふわっちのWGP、マンスリー、イベントランキングで1位を連発し、年間獲得ポイント1.2億pt級と紹介されたトップライバー。2026年にはKICKへも強く展開し、日本配信者視聴時間ランキングTOP10入り、KICKピーク同接1万人超を記録している。\n\n代表的な話題は、柔道対決での肩鎖関節脱臼、ツイキャス『伝説の殴られ屋』、養分伊藤拉致事件周辺、ぱるぱる・機長・天然ストレートらを巻き込んだふわっち違法賭博スキャンダル、過去関与の認めと謝罪、ゼキシン脅迫におわせLINE捏造、MARIAとの破局、40時間不眠、元カノういたん切り抜き900万表示級バズ、Z界応援ソング、命ネタ暴走、住所晒し、たむとの暴力系話題、8月末の再炎上、塾生トーマス問題、緊急入院ネタなど。\n\n紹介するなら『ふわっちの課金ランキングを駆け上がり、KICKで事件と人間関係を燃料に巨大化した、Z界を率いる体当たり型ライブ配信者』。",
+    "id": "seiz",
+    "bodyImageUrl": ""
   }
-}
-
-/* ───── 読み込み ───── */
-async function loadAll() {
-  if (USE_SB) {
-    try {
-      const s = await sbGet('streamers');
-      if (Array.isArray(s)) {
-        streamersData = s;
-        console.log(`Supabase: loaded ${s.length} streamers`);
-      } else {
-        // 初回のみ、リポジトリ同梱の streamers.json を移行
-        const seed = localRead(path.join(__dirname, 'streamers.json'), null);
-        streamersData = Array.isArray(seed) ? seed : [];
-        if (streamersData.length) {
-          await sbPut('streamers', streamersData);
-          console.log(`Supabase: seeded ${streamersData.length} streamers`);
-        } else {
-          await sbPut('streamers', []);
-          console.log('Supabase: initialized empty streamers');
-        }
-      }
-
-      const st = await sbGet('settings');
-      if (st && typeof st === 'object') overlaySettings = Object.assign(overlaySettings, st);
-      lastError = '';
-    } catch (err) {
-      lastError = err.message;
-      console.error('Supabase load failed:', err.message);
-      streamersData = localRead(localStreamersPath, []);
-    }
-  } else {
-    streamersData = localRead(localStreamersPath, localRead(path.join(__dirname, 'streamers.json'), []));
-    overlaySettings = Object.assign(overlaySettings, localRead(localSettingsPath, {}));
-    console.log(`Local: loaded ${streamersData.length} streamers`);
-  }
-}
-
-/* ───── 保存 ───── */
-async function saveStreamers() {
-  if (USE_SB) {
-    try {
-      await sbPut('streamers', streamersData);
-      lastError = '';
-      return true;
-    } catch (err) {
-      lastError = err.message;
-      console.error('Supabase save failed:', err.message);
-      return false;
-    }
-  }
-  return localWrite(localStreamersPath, streamersData);
-}
-
-let settingsTimer = null;
-function saveSettingsSoon() {
-  clearTimeout(settingsTimer);
-  settingsTimer = setTimeout(async () => {
-    if (USE_SB) {
-      try { await sbPut('settings', overlaySettings); }
-      catch (err) { console.error('Supabase settings save failed:', err.message); }
-    } else {
-      localWrite(localSettingsPath, overlaySettings);
-    }
-  }, 1500);
-}
-
-/* ───── HTTP ───── */
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk;
-      if (body.length > 80 * 1024 * 1024) { req.destroy(); reject(new Error('too large')); }
-    });
-    req.on('end', () => resolve(body));
-    req.on('error', reject);
-  });
-}
-
-function serveFile(res, fileName) {
-  const filePath = path.join(__dirname, fileName);
-  try {
-    if (!fs.existsSync(filePath)) {
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end(`File not found: ${fileName}`);
-      return;
-    }
-    res.writeHead(200, {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-store, no-cache, must-revalidate'
-    });
-    res.end(fs.readFileSync(filePath, 'utf-8'));
-  } catch (err) {
-    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('Error: ' + err.message);
-  }
-}
-
-const server = http.createServer(async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
-
-  const url = req.url.split('?')[0];
-  console.log(`[${new Date().toISOString()}] ${req.method} ${url}`);
-
-  if (url === '/dock' && req.method === 'GET') { serveFile(res, 'streamer_dic_dock.html'); return; }
-  if (url === '/overlay' && req.method === 'GET') { serveFile(res, 'streamer_dic_overlay.html'); return; }
-
-  if (url === '/api/streamers' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(streamersData));
-    return;
-  }
-
-  if (url === '/api/streamers' && req.method === 'POST') {
-    try {
-      const body = await readBody(req);
-      const data = JSON.parse(body);
-      if (!Array.isArray(data)) throw new Error('array required');
-      const prev = streamersData;
-      streamersData = data;
-      const ok = await saveStreamers();
-      if (!ok) streamersData = prev;
-      connectedClients.dock.forEach(c => {
-        if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'dataUpdated' }));
-      });
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok, count: streamersData.length, error: ok ? undefined : lastError }));
-    } catch (err) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: false, error: err.message }));
-    }
-    return;
-  }
-
-  if (url === '/api/settings' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(overlaySettings));
-    return;
-  }
-
-  if (url === '/api/reload' && req.method === 'POST') {
-    await loadAll();
-    connectedClients.dock.forEach(c => {
-      if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'dataUpdated' }));
-    });
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, count: streamersData.length }));
-    return;
-  }
-
-  // 保存先の状態確認
-  if (url === '/api/health' && req.method === 'GET') {
-    const info = {
-      serverVersion: VERSION,
-      dockVersion: clientVersions.dock || '(未接続)',
-      overlayVersion: clientVersions.overlay || '(未接続)',
-      connected: { dock: connectedClients.dock.size, overlay: connectedClients.overlay.size },
-      storage: USE_SB ? 'supabase' : 'local-file',
-      supabaseUrl: USE_SB ? SB_URL : null,
-      table: USE_SB ? SB_TABLE : null,
-      streamers: streamersData.length,
-      lastError: lastError || null
-    };
-    if (USE_SB) {
-      try {
-        const probe = await sbGet('streamers');
-        info.reachable = true;
-        info.rowExists = probe !== null;
-      } catch (err) {
-        info.reachable = false;
-        info.lastError = err.message;
-      }
-    } else {
-      info.path = localStreamersPath;
-      info.fileExists = fs.existsSync(localStreamersPath);
-    }
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(info, null, 2));
-    return;
-  }
-
-  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-  res.end('Not Found');
-});
-
-/* ───── WebSocket ───── */
-const wss = new WebSocket.Server({ server });
-
-wss.on('connection', (ws) => {
-  let clientType = null;
-
-  ws.on('message', (message) => {
-    try {
-      const msg = JSON.parse(message);
-
-      if (msg.type === 'init') {
-        clientType = msg.clientType;
-        if (connectedClients[clientType]) connectedClients[clientType].add(ws);
-        if (clientType in clientVersions) clientVersions[clientType] = msg.version || '(不明・旧版)';
-        ws.send(JSON.stringify({ type: 'ack', clientType, settings: overlaySettings }));
-        console.log(`${clientType} connected. dock=${connectedClients.dock.size} overlay=${connectedClients.overlay.size}`);
-        return;
-      }
-
-      if (msg.type === 'selectStreamer') {
-        const idx = streamersData.findIndex(x => x.id === msg.streamerId);
-        const s = idx >= 0 ? streamersData[idx] : null;
-        if (s) {
-          connectedClients.overlay.forEach(c => {
-            if (c.readyState === WebSocket.OPEN) {
-              c.send(JSON.stringify({ type: 'showStreamer', streamer: s, index: idx }));
-            }
-          });
-        }
-        return;
-      }
-
-      if (msg.type === 'hideStreamer') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'hideOverlay' }));
-        });
-        return;
-      }
-
-      if (msg.type === 'scroll') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'scroll', dir: msg.dir }));
-        });
-        return;
-      }
-
-      if (msg.type === 'playVideo') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'playVideo', url: msg.url, title: msg.title }));
-        });
-        return;
-      }
-
-      // ドック → オーバーレイ：再生操作
-      if (msg.type === 'videoCmd') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) {
-            c.send(JSON.stringify({ type: 'videoCmd', action: msg.action, value: msg.value }));
-          }
-        });
-        return;
-      }
-
-      // オーバーレイ → ドック：再生位置の通知
-      if (msg.type === 'videoState') {
-        connectedClients.dock.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) {
-            c.send(JSON.stringify({
-              type: 'videoState',
-              playing: msg.playing,
-              time: msg.time,
-              duration: msg.duration,
-              controllable: msg.controllable
-            }));
-          }
-        });
-        return;
-      }
-
-      if (msg.type === 'stopVideo') {
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'stopVideo' }));
-        });
-        return;
-      }
-
-      if (msg.type === 'setVolume') {
-        overlaySettings.volume = msg.volume;
-        saveSettingsSoon();
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'setVolume', volume: msg.volume }));
-        });
-        return;
-      }
-
-      if (msg.type === 'updateSettings') {
-        overlaySettings = Object.assign(overlaySettings, msg.settings || {});
-        saveSettingsSoon();
-        connectedClients.overlay.forEach(c => {
-          if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'settings', settings: overlaySettings }));
-        });
-        return;
-      }
-
-    } catch (err) {
-      console.error('WS message error:', err.message);
-    }
-  });
-
-  ws.on('close', () => {
-    if (clientType && connectedClients[clientType]) connectedClients[clientType].delete(ws);
-  });
-
-  ws.on('error', (err) => console.error('WS error:', err.message));
-});
-
-/* ───── 起動 ───── */
-if (typeof fetch !== 'function') {
-  console.error('このNode.jsにはfetchがありません。Node 18以上が必要です。');
-}
-
-loadAll().then(() => {
-  server.listen(PORT, () => {
-    console.log('Streamer Dictionary Overlay Server  ' + VERSION);
-    console.log(`  Port:      ${PORT}`);
-    console.log(`  Storage:   ${USE_SB ? 'Supabase (' + SB_URL + ' / ' + SB_TABLE + ')' : 'ローカルファイル ' + localStreamersPath}`);
-    console.log(`  Streamers: ${streamersData.length}`);
-    if (!USE_SB) console.log('  ※ SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY が未設定です');
-  });
-});
+]
