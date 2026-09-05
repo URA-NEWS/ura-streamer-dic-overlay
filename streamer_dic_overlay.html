@@ -37,15 +37,11 @@ html,body{width:1280px;height:720px;margin:0;background:transparent;color:#ECE4D
     '多屋来夢との性的関係をKICK配信で告白': '19-taya-raimu.webp'
   };
 
-  function escJs(s){
-    return String(s).replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
-  }
-
   function buildPatch(){
     let lines = [];
     lines.push('const KOREKORE_TIMELINE_IMAGES = {');
     Object.entries(IMAGES).forEach(([title, file]) => {
-      lines.push(`  \`${escJs(title)}\`: \`${file}\`,`);
+      lines.push('  ' + JSON.stringify(title) + ': ' + JSON.stringify(file) + ',');
     });
     lines.push('};');
     lines.push('function timelineImageOverride(s, e){');
