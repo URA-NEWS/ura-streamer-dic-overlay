@@ -14,47 +14,137 @@ html,body{width:1280px;height:720px;margin:0;background:transparent;color:#ECE4D
 <script>
 (async function(){
   const BASE_OVERLAY = 'https://raw.githubusercontent.com/URA-NEWS/ura-streamer-dic-overlay/c4cbd587cf670e410f899c66d8bbd3b8ddf7cdd8/streamer_dic_overlay.html';
-  const IMAGE_BASE = 'https://lcnuxfvjownsmqvuagkd.supabase.co/storage/v1/object/public/site/streamer-dic/korekore/timeline/';
+  const IMAGE_BASE = 'https://raw.githubusercontent.com/URA-NEWS/ura-streamer-dic-overlay/main/assets/korekore/timeline-v2/';
   const IMAGES = {
-    'タバコのポイ捨て注意企画で知られる': '01-tobacco-littering.webp',
-    '本田翼・ねこてん配信へのコレリス突撃で荒らし誘導疑惑': '02-comment-raid.webp',
-    'アイドルグループ Kore:ct を結成': '03-korect-formation.webp',
-    'ぷぅさんの女性関係を配信で話し、3年間絶縁': '04-pusan-break.webp',
-    'へずまりゅう話を信じてがーどまんを一方的に批判、早とちり炎上': '05-hezuma-guardman.webp',
-    'X/Twitter本アカウントが虚偽通報で凍結': '06-twitter-freeze.webp',
-    '初書籍『告発』発売': '07-book-kokuhatsu.webp',
-    '民放ドラマ初出演、SNSの存在感が地上波ドラマへ': '08-tv-drama.webp',
-    'TikTok LIVE提携事務所『Korective』を設立': '09-korective.webp',
-    '有馬記念で600万円全ロスとして話題化': '10-arima-600man.webp',
-    'TikTok盾イベントの不正行為を告発、TikTok引退も示唆': '11-tiktok-shield.webp',
-    '大阪万博を辛口レポート、生配信ルール錯綜に困惑': '12-expo-2025.webp',
-    'くら寿司“避妊具テロ”関係者がコレコレ配信に出演していた件が後日報道': '13-kurasushi.webp',
-    '120kg・肉離れ・車椅子生活を投稿しダイエット宣言': '14-wheelchair-diet.webp',
-    '『結婚します』投稿で祝福と疑念が殺到': '15-marriage-post.webp',
-    '結婚発表は『結婚相手募集』企画のフリだったと判明': '16-marriage-program.webp',
-    'アインシュタイン稲田DM疑惑で不正ログイン犯逮捕、コレコレが謝罪・自粛表明': '17-inada-apology.webp',
-    '緊急生放送で『今炎上中なんでね、僕』と釈明': '18-inada-stream.webp',
-    '多屋来夢との性的関係をKICK配信で告白': '19-taya-raimu.webp'
+    '広島県で生まれる': '01-birth-profile.svg',
+    'BARギコっぽいONLINEで初配信': '02-bar-giko-first-stream.svg',
+    'BARギコっぽいONLINEをアクセス禁止に': '03-bar-giko-ban.svg',
+    'ニコニコ生放送で配信開始': '04-nico-live-start.svg',
+    'ニコ生コミュニティ人数10万人突破': '05-nico-community-100k.svg',
+    'ツイキャス配信を開始': '06-twitcasting-start.svg',
+    'YouTubeチャンネル開設': '07-youtube-channel-open.svg',
+    '『マツコの知らない世界』で動画が紹介される': '08-matsuko-tv-feature.svg',
+    'タバコのポイ捨て注意企画で知られる': '09-tobacco-littering.svg',
+    '本田翼・ねこてん配信へのコレリス突撃で荒らし誘導疑惑': '11-comment-raid.svg',
+    'ツイキャス史上初のサポーター20万人突破': '12-twitcasting-200k.svg',
+    'アイドルグループ Kore:ct を結成': '13-korect-formation.svg',
+    'YouTube動画100本以上を突然削除': '14-youtube-mass-delete.svg',
+    'Kore:ctとの契約終了': '15-korect-contract-end.svg',
+    'Kore:ctメンバー6人中5人脱退、グループ崩壊騒動': '16-korect-collapse.svg',
+    'Kore:ct前運営会社との金銭問題を公表、新グループ立ち上げへ': '17-korect-money-trouble.svg',
+    '『コレって恋ですか?』を結成': '18-korekoi-formation.svg',
+    'YouTube登録者100万人突破': '19-youtube-one-million.svg',
+    'ぷぅさんの女性関係を配信で話し、3年間絶縁': '20-pusan-break.svg',
+    'へずまりゅう話を信じてがーどまんを一方的に批判、早とちり炎上': '21-hezuma-guardman.svg',
+    'X/Twitter本アカウントが虚偽通報で凍結': '25-twitter-freeze.svg',
+    '初書籍『告発』発売': '30-book-kokuhatsu.svg',
+    '週刊誌で年収・暴露配信観を語る': '31-weekly-income-interview.svg',
+    '民放ドラマ初出演、SNSの存在感が地上波ドラマへ': '35-tv-drama.svg',
+    '同接51万記録を本人が発表し、視聴者から反響': '36-concurrent-519k.svg',
+    '『告発』文庫化、ヒカル対談も追加': '37-kokuhatsu-bunko.svg',
+    'ぷぅさんと3年ぶりに通話し和解': '38-pusan-reconciliation.svg',
+    'ニコニコチャンネル配信を終了し、有料配信軸を移す': '39-niconico-channel-end.svg',
+    '花火大会の場所取り注意動画がTikTokで500万再生級に': '40-fireworks-tiktok.svg',
+    '温泉の男湯で盗撮被害を告白': '43-onsen-voyeurism.svg',
+    'ゆりにゃがコレコレへの告訴状提出を発表': '44-yurinya-lawsuit.svg',
+    'TikTok LIVE提携事務所『Korective』を設立': '45-korective-launch.svg',
+    'Korectiveに2週間で100名以上が参加': '46-korective-100-members.svg',
+    '有馬記念で600万円全ロスとして話題化': '47-arima-600man.svg',
+    'TikTok盾イベントの不正行為を告発、TikTok引退も示唆': '48-tiktok-shield.svg',
+    '大阪万博を辛口レポート、生配信ルール錯綜に困惑': '49-expo-2025.svg',
+    'くら寿司“避妊具テロ”関係者がコレコレ配信に出演していた件が後日報道': '50-kurasushi.svg',
+    '120kg・肉離れ・車椅子生活を投稿しダイエット宣言': '51-wheelchair-diet.svg',
+    '『結婚します』投稿で祝福と疑念が殺到': '52-marriage-post.svg',
+    '結婚発表は『結婚相手募集』企画のフリだったと判明': '53-marriage-program.svg',
+    '『コレコレに暴露する』発言で相談者が脅迫容疑、本人が経緯説明': '55-threat-arrest.svg',
+    'アインシュタイン稲田DM疑惑で不正ログイン犯逮捕、コレコレが謝罪・自粛表明': '56-inada-apology.svg',
+    '緊急生放送で『今炎上中なんでね、僕』と釈明': '57-inada-stream.svg',
+    '多屋来夢との性的関係をKICK配信で告白': '60-taya-raimu-kick.svg',
+    '『性欲に負けました』発言、避妊具なし問題で批判が集中': '61-taya-raimu-criticism.svg',
+    'Xで多屋来夢騒動が画像付きニュースとして拡散': '62-taya-raimu-x.svg',
+    '『コキコキ』あだ名化、性的炎上がネタ化': '63-kokikoki-meme.svg',
+    '多屋来夢騒動に続き、セフレ女性トラブルも暴露される': '64-sex-friend-trouble.svg',
+    'ふわっち違法賭博スキャンダルをコレコレが追及': '65-whowatch-gambling.svg',
+    'YouTube登録者247万人、総再生14億回超の大型チャンネルに': '68-youtube-current-stats.svg'
+  };
+  const URLS = {
+    '広島県で生まれる': 'https://ja.wikipedia.org/wiki/%E3%82%B3%E3%83%AC%E3%82%B3%E3%83%AC_(%E9%85%8D%E4%BF%A1%E8%80%85)',
+    'BARギコっぽいONLINEで初配信': 'https://ja.wikipedia.org/wiki/%E3%82%B3%E3%83%AC%E3%82%B3%E3%83%AC_(%E9%85%8D%E4%BF%A1%E8%80%85)',
+    'BARギコっぽいONLINEをアクセス禁止に': 'https://ja.wikipedia.org/wiki/%E3%82%B3%E3%83%AC%E3%82%B3%E3%83%AC_(%E9%85%8D%E4%BF%A1%E8%80%85)',
+    'ニコニコ生放送で配信開始': 'https://ja.wikipedia.org/wiki/%E3%82%B3%E3%83%AC%E3%82%B3%E3%83%AC_(%E9%85%8D%E4%BF%A1%E8%80%85)',
+    'ニコ生コミュニティ人数10万人突破': 'https://ja.wikipedia.org/wiki/%E3%82%B3%E3%83%AC%E3%82%B3%E3%83%AC_(%E9%85%8D%E4%BF%A1%E8%80%85)',
+    'ツイキャス配信を開始': 'https://ja.wikipedia.org/wiki/%E3%82%B3%E3%83%AC%E3%82%B3%E3%83%AC_(%E9%85%8D%E4%BF%A1%E8%80%85)',
+    'YouTubeチャンネル開設': 'https://www.youtube.com/@korekorech',
+    '『マツコの知らない世界』で動画が紹介される': 'https://ja.wikipedia.org/wiki/%E3%82%B3%E3%83%AC%E3%82%B3%E3%83%AC_(%E9%85%8D%E4%BF%A1%E8%80%85)',
+    'タバコのポイ捨て注意企画で知られる': 'https://www.youtube.com/@korekorech',
+    '本田翼・ねこてん配信へのコレリス突撃で荒らし誘導疑惑': 'https://www.j-cast.com/2018/11/08343111.html',
+    'ツイキャス史上初のサポーター20万人突破': 'https://ja.wikipedia.org/wiki/%E3%82%B3%E3%83%AC%E3%82%B3%E3%83%AC_(%E9%85%8D%E4%BF%A1%E8%80%85)',
+    'アイドルグループ Kore:ct を結成': 'https://ja.everybodywiki.com/Kore%3Act',
+    'YouTube動画100本以上を突然削除': 'https://yutura.net/news/archives/5526',
+    'Kore:ctメンバー6人中5人脱退、グループ崩壊騒動': 'https://yutura.net/news/archives/9285',
+    'Kore:ctとの契約終了': 'https://yutura.net/news/archives/12516',
+    'Kore:ct前運営会社との金銭問題を公表、新グループ立ち上げへ': 'https://yutura.net/news/archives/12516',
+    '『コレって恋ですか?』を結成': 'https://www.youtube.com/@korekoi',
+    'YouTube登録者100万人突破': 'https://yutura.net/channel/4882/latest/',
+    'ぷぅさんの女性関係を配信で話し、3年間絶縁': 'https://yutura.net/news/archives/87874',
+    'へずまりゅう話を信じてがーどまんを一方的に批判、早とちり炎上': 'https://www.youtube.com/@korekorech',
+    'X/Twitter本アカウントが虚偽通報で凍結': 'https://twitter.com/korekore19',
+    '初書籍『告発』発売': 'https://www.amazon.co.jp/dp/4299009024',
+    '週刊誌で年収・暴露配信観を語る': 'https://smart-flash.jp/entame/178183/',
+    '民放ドラマ初出演、SNSの存在感が地上波ドラマへ': 'https://www.tv-tokyo.co.jp/aoihonoo/',
+    '同接51万記録を本人が発表し、視聴者から反響': 'https://twitter.com/korekore19',
+    '『告発』文庫化、ヒカル対談も追加': 'https://www.hanmoto.com/bd/isbn/9784299038296',
+    'ぷぅさんと3年ぶりに通話し和解': 'https://yutura.net/news/archives/87874',
+    'ニコニコチャンネル配信を終了し、有料配信軸を移す': 'https://yutura.net/news/archives/94621',
+    '花火大会の場所取り注意動画がTikTokで500万再生級に': 'https://www.tiktok.com/@korekore_ch',
+    '偽物ポケカ販売の屋台を注意して話題化': 'https://www.youtube.com/watch?v=OGTMr3I69Us',
+    '温泉の男湯で盗撮被害を告白': 'https://yutura.net/news/archives/118410',
+    'ゆりにゃがコレコレへの告訴状提出を発表': 'https://www.youtube.com/watch?v=GBsJdhg-1n0',
+    'TikTok LIVE提携事務所『Korective』を設立': 'https://korective.com/',
+    'Korectiveに2週間で100名以上が参加': 'https://yutura.net/news/archives/126242',
+    '有馬記念で600万円全ロスとして話題化': 'https://twitter.com/korekore19',
+    'TikTok盾イベントの不正行為を告発、TikTok引退も示唆': 'https://yutura.net/news/archives/137724',
+    '大阪万博を辛口レポート、生配信ルール錯綜に困惑': 'https://www.youtube.com/@korekorech',
+    'くら寿司“避妊具テロ”関係者がコレコレ配信に出演していた件が後日報道': 'https://yutura.net/news/archives/141207',
+    '120kg・肉離れ・車椅子生活を投稿しダイエット宣言': 'https://twitter.com/korekore19',
+    '『結婚します』投稿で祝福と疑念が殺到': 'https://twitter.com/korekore19',
+    '結婚発表は『結婚相手募集』企画のフリだったと判明': 'https://www.youtube.com/@korekorech',
+    '『コレコレに暴露する』発言で相談者が脅迫容疑、本人が経緯説明': 'https://yutura.net/news/archives/141319',
+    'アインシュタイン稲田DM疑惑で不正ログイン犯逮捕、コレコレが謝罪・自粛表明': 'https://www.youtube.com/@korekorech',
+    '緊急生放送で『今炎上中なんでね、僕』と釈明': 'https://www.youtube.com/@korekorech',
+    '多屋来夢との性的関係をKICK配信で告白': 'https://kick.com/korekore',
+    '『性欲に負けました』発言、避妊具なし問題で批判が集中': 'https://yutura.net/news/archives/147616',
+    'Xで多屋来夢騒動が画像付きニュースとして拡散': 'https://twitter.com/raimu_taya/status/2003428819664011600',
+    '『コキコキ』あだ名化、性的炎上がネタ化': 'https://twitter.com/raimu_taya/status/2003428819664011600',
+    '多屋来夢騒動に続き、セフレ女性トラブルも暴露される': 'https://twitcasting.tv/c:gomikuzunokiwami/movie/829026861',
+    'ふわっち違法賭博スキャンダルをコレコレが追及': 'https://coki.jp/article/column/89120/',
+    'ゴミ屋敷清掃の大型相談配信が話題化': 'https://www.youtube.com/watch?v=mN5Qr-fxe6o',
+    'YouTube登録者247万人、総再生14億回超の大型チャンネルに': 'https://yutura.net/channel/4882/latest/'
   };
 
   function buildPatch(){
-    let lines = [];
-    lines.push('const KOREKORE_TIMELINE_IMAGES = {');
-    Object.entries(IMAGES).forEach(([title, file]) => {
-      lines.push('  ' + JSON.stringify(title) + ': ' + JSON.stringify(file) + ',');
-    });
-    lines.push('};');
+    const lines = [];
+    lines.push('const KOREKORE_TIMELINE_IMAGES = ' + JSON.stringify(IMAGES, null, 2) + ';');
+    lines.push('const KOREKORE_TIMELINE_URLS = ' + JSON.stringify(URLS, null, 2) + ';');
     lines.push('function timelineImageOverride(s, e){');
     lines.push("  if (!s || s.id !== 'korekore') return ''; ");
     lines.push("  const file = KOREKORE_TIMELINE_IMAGES[String(e.title || '')];");
     lines.push("  return file ? '" + IMAGE_BASE + "' + file : ''; ");
     lines.push('}');
+    lines.push('function timelineUrlOverride(s, e){');
+    lines.push("  if (!s || s.id !== 'korekore') return ''; ");
+    lines.push("  return KOREKORE_TIMELINE_URLS[String(e.title || '')] || ''; ");
+    lines.push('}');
     return lines.join('\n');
   }
 
   function patch(html){
-    html = html.replace(/const APP_VERSION = '[^']+';/, "const APP_VERSION = '2026-09-05-uploaded-korekore-images';");
+    html = html.replace(/const APP_VERSION = '[^']+';/, "const APP_VERSION = '2026-09-08-github-korekore-timeline-v2';");
     html = html.replace(/let figNo = 0;/, buildPatch() + '\n\nlet figNo = 0;');
+    const itemStart = "h += '<div class=\"tl-item\">';";
+    const itemPatch = "h += '<div class=\"tl-item\">';\n      const urlOverride = timelineUrlOverride(s, e);\n      if (urlOverride) e = Object.assign({}, e, { url: urlOverride });";
+    if (!html.includes(itemStart)) throw new Error('timeline item block was not found');
+    html = html.replace(itemStart, itemPatch);
     const oldBlock = /const th = ytThumb\(e\.url\);\s*if \(!badTimelineImage\(e\)\)\{\s*h \+= fig\(e\.imageUrl, e\.date \|\| ''\);\s*\} else if \(th\) \{\s*h \+= fig\(th, 'YOUTUBE'\);\s*\}/;
     const newBlock = "const imageOverride = timelineImageOverride(s, e);\n      const imageUrl = imageOverride || e.imageUrl;\n      const th = ytThumb(e.url);\n      if (imageOverride || !badTimelineImage(Object.assign({}, e, { imageUrl }))){\n        h += fig(imageUrl, e.date || '');\n      } else if (th) {\n        h += fig(th, 'YOUTUBE');\n      }";
     if (!oldBlock.test(html)) throw new Error('timeline image block was not found');
