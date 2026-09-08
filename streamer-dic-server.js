@@ -4,7 +4,7 @@ const path = require('path');
 const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
-const VERSION = '2026-09-08-bundled-streamers-sync';
+const VERSION = '2026-09-08-preserve-bundled-timeline-media';
 
 /* ───── Supabase 設定 ─────
    SUPABASE_URL              例: https://xxxxxxxx.supabase.co
@@ -116,6 +116,43 @@ function mergeBundledStreamers(current) {
     }
   });
   return { data, changed, seedCount: seed.length };
+}
+
+function timelineIdentity(t) {
+  return [t && t.date, t && t.title].map(v => String(v || '').trim()).join('\u0000');
+}
+
+function keepExistingMedia(incoming, existing) {
+  if (!incoming || !existing) return incoming;
+  const out = Object.assign({}, incoming);
+  if (!out.photoUrl && existing.photoUrl) out.photoUrl = existing.photoUrl;
+  if (!out.bodyImageUrl && existing.bodyImageUrl) out.bodyImageUrl = existing.bodyImageUrl;
+
+  if (Array.isArray(out.timeline) && Array.isArray(existing.timeline)) {
+    const byKey = new Map();
+    existing.timeline.forEach(t => {
+      const k = timelineIdentity(t);
+      if (k !== '\u0000') byKey.set(k, t);
+    });
+
+    out.timeline = out.timeline.map(t => {
+      if (!t || typeof t !== 'object') return t;
+      const prev = byKey.get(timelineIdentity(t));
+      if (!prev) return t;
+      const next = Object.assign({}, t);
+      if (!next.imageUrl && prev.imageUrl) next.imageUrl = prev.imageUrl;
+      if (!next.url && prev.url) next.url = prev.url;
+      return next;
+    });
+  }
+
+  return out;
+}
+
+function keepBundledMedia(list) {
+  if (!Array.isArray(list)) return [];
+  const byId = new Map(bundledStreamers().filter(s => s && s.id).map(s => [s.id, s]));
+  return list.map(s => byId.has(s && s.id) ? keepExistingMedia(s, byId.get(s.id)) : s);
 }
 
 async function syncBundledStreamers(reason) {
@@ -250,7 +287,7 @@ async function loadAll() {
     try {
       const s = await sbGet('streamers');
       if (Array.isArray(s)) {
-        const merged = mergeBundledStreamers(s);
+        const merged = mergeBundledStreamers(keepBundledMedia(s));
         streamersData = merged.data;
         if (merged.changed) await sbPut('streamers', streamersData);
         console.log(`Supabase: loaded ${s.length} streamers${merged.changed ? ', synced bundled data' : ''}`);
@@ -271,11 +308,11 @@ async function loadAll() {
     } catch (err) {
       lastError = err.message;
       console.error('Supabase load failed:', err.message);
-      const merged = mergeBundledStreamers(localRead(localStreamersPath, []));
+      const merged = mergeBundledStreamers(keepBundledMedia(localRead(localStreamersPath, [])));
       streamersData = merged.data;
     }
   } else {
-    const merged = mergeBundledStreamers(localRead(localStreamersPath, []));
+    const merged = mergeBundledStreamers(keepBundledMedia(localRead(localStreamersPath, [])));
     streamersData = merged.data;
     if (merged.changed) localWrite(localStreamersPath, streamersData);
     overlaySettings = Object.assign(overlaySettings, localRead(localSettingsPath, {}));
@@ -409,7 +446,8 @@ const server = http.createServer(async (req, res) => {
       const data = JSON.parse(body);
       if (!Array.isArray(data)) throw new Error('array required');
       const prev = streamersData;
-      streamersData = data;
+      const merged = mergeBundledStreamers(keepBundledMedia(data));
+      streamersData = merged.data;
       const ok = await saveStreamers();
       if (!ok) streamersData = prev;
       connectedClients.dock.forEach(c => {
@@ -417,7 +455,7 @@ const server = http.createServer(async (req, res) => {
       });
       if (ok) refreshSelectedStreamer();
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok, count: streamersData.length, error: ok ? undefined : lastError }));
+      res.end(JSON.stringify({ ok, count: streamersData.length, bundledSynced: merged.changed, error: ok ? undefined : lastError }));
     } catch (err) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: err.message }));
