@@ -4,7 +4,7 @@ const path = require('path');
 const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
-const VERSION = '2026-09-05-timeline-upload';
+const VERSION = '2026-09-08-bundled-streamers-sync';
 
 /* ───── Supabase 設定 ─────
    SUPABASE_URL              例: https://xxxxxxxx.supabase.co
@@ -116,6 +116,22 @@ function mergeBundledStreamers(current) {
     }
   });
   return { data, changed, seedCount: seed.length };
+}
+
+async function syncBundledStreamers(reason) {
+  const merged = mergeBundledStreamers(streamersData);
+  if (!merged.changed) return { changed: false, seedCount: merged.seedCount };
+
+  const prev = streamersData;
+  streamersData = merged.data;
+  const ok = await saveStreamers();
+  if (!ok) {
+    streamersData = prev;
+    return { changed: false, seedCount: merged.seedCount, error: lastError || 'save failed' };
+  }
+
+  console.log(`Bundled streamers synced${reason ? ' by ' + reason : ''}`);
+  return { changed: true, seedCount: merged.seedCount };
 }
 
 function ensureUploadDir() {
@@ -344,6 +360,25 @@ function serveFile(res, fileName) {
   }
 }
 
+function serveJsonFile(res, fileName) {
+  const filePath = path.join(__dirname, fileName);
+  try {
+    if (!fs.existsSync(filePath)) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end(`File not found: ${fileName}`);
+      return;
+    }
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store, no-cache, must-revalidate'
+    });
+    fs.createReadStream(filePath).pipe(res);
+  } catch (err) {
+    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Error: ' + err.message);
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -356,9 +391,13 @@ const server = http.createServer(async (req, res) => {
 
   if (url === '/dock' && req.method === 'GET') { serveFile(res, 'streamer_dic_dock.html'); return; }
   if (url === '/overlay' && req.method === 'GET') { serveFile(res, 'streamer_dic_overlay.html'); return; }
+  if (url === '/streamers.json' && req.method === 'GET') { serveJsonFile(res, 'streamers.json'); return; }
   if (url.startsWith('/uploads/') && req.method === 'GET') { serveUpload(res, url); return; }
 
   if (url === '/api/streamers' && req.method === 'GET') {
+    const sync = await syncBundledStreamers('api/streamers');
+    if (sync.error) res.setHeader('X-Bundled-Sync-Error', sync.error);
+    res.setHeader('X-Bundled-Synced', sync.changed ? '1' : '0');
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(streamersData));
     return;
@@ -408,6 +447,7 @@ const server = http.createServer(async (req, res) => {
 
   if (url === '/api/reload' && req.method === 'POST') {
     await loadAll();
+    await syncBundledStreamers('api/reload');
     connectedClients.dock.forEach(c => {
       if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'dataUpdated' }));
     });
@@ -429,7 +469,8 @@ const server = http.createServer(async (req, res) => {
       table: USE_SB ? SB_TABLE : null,
       streamers: streamersData.length,
       selectedStreamerId,
-      lastError: lastError || null
+      lastError: lastError || null,
+      bundledSeedCount: bundledStreamers().length
     };
     if (USE_SB) {
       try {
