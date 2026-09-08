@@ -4,7 +4,7 @@ const path = require('path');
 const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
-const VERSION = '2026-09-08-preserve-bundled-timeline-media';
+const VERSION = '2026-09-08-merge-bundled-by-name';
 
 /* ───── Supabase 設定 ─────
    SUPABASE_URL              例: https://xxxxxxxx.supabase.co
@@ -99,20 +99,59 @@ function bundledStreamers() {
   return Array.isArray(data) ? data : [];
 }
 
+function normalizeStreamerText(value) {
+  return String(value || '')
+    .normalize('NFKC')
+    .replace(/\s+/g, '')
+    .toLowerCase();
+}
+
+function sameStreamerRecord(a, b) {
+  if (!a || !b) return false;
+  if (a.id && b.id && a.id === b.id) return true;
+
+  const aName = normalizeStreamerText(a.name);
+  const bName = normalizeStreamerText(b.name);
+  if (aName && bName && aName === bName) return true;
+
+  const aYomi = normalizeStreamerText(a.yomi);
+  const bYomi = normalizeStreamerText(b.yomi);
+  return !!(aYomi && bYomi && aYomi === bYomi);
+}
+
+function mergeBundledIntoExisting(seed, existing) {
+  if (!existing) return seed;
+  const merged = keepExistingMedia(Object.assign({}, existing, seed), existing);
+  if (existing.id) merged.id = existing.id;
+  return merged;
+}
+
 function mergeBundledStreamers(current) {
-  const data = Array.isArray(current) ? current.slice() : [];
+  const data = Array.isArray(current) ? current.filter(s => s && typeof s === 'object').slice() : [];
   const seed = bundledStreamers().filter(s => s && s.id);
   let changed = false;
   seed.forEach(s => {
-    const i = data.findIndex(x => x && x.id === s.id);
+    let i = data.findIndex(x => x && x.id !== s.id && sameStreamerRecord(x, s));
+    if (i < 0) i = data.findIndex(x => x && x.id === s.id);
+
     if (i >= 0) {
-      if (JSON.stringify(data[i]) !== JSON.stringify(s)) {
-        data[i] = s;
+      const next = mergeBundledIntoExisting(s, data[i]);
+      if (JSON.stringify(data[i]) !== JSON.stringify(next)) {
+        data[i] = next;
         changed = true;
       }
     } else {
       data.push(s);
+      i = data.length - 1;
       changed = true;
+    }
+
+    for (let j = data.length - 1; j >= 0; j--) {
+      if (j !== i && sameStreamerRecord(data[j], s)) {
+        data.splice(j, 1);
+        if (j < i) i -= 1;
+        changed = true;
+      }
     }
   });
   return { data, changed, seedCount: seed.length };
@@ -151,8 +190,11 @@ function keepExistingMedia(incoming, existing) {
 
 function keepBundledMedia(list) {
   if (!Array.isArray(list)) return [];
-  const byId = new Map(bundledStreamers().filter(s => s && s.id).map(s => [s.id, s]));
-  return list.map(s => byId.has(s && s.id) ? keepExistingMedia(s, byId.get(s.id)) : s);
+  const seed = bundledStreamers().filter(s => s && s.id);
+  return list.map(s => {
+    const bundled = seed.find(x => sameStreamerRecord(s, x));
+    return bundled ? keepExistingMedia(s, bundled) : s;
+  });
 }
 
 async function syncBundledStreamers(reason) {
