@@ -4,11 +4,11 @@ const path = require('path');
 const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3942;
-const VERSION = '2026-09-08-merge-bundled-by-name';
+const VERSION = '2026-09-09-extra-streamers-seed';
 
 /* ───── Supabase 設定 ─────
    SUPABASE_URL              例: https://xxxxxxxx.supabase.co
-   SUPABASE_SERVICE_ROLE_KEY サービスロールキー（サーバー専用・公開禁止）
+   SUPABASE_SERVICE_ROLE_KEY サーバー専用・公開禁止）
    SUPABASE_STORAGE_BUCKET   任意。設定すると年表画像をSupabase Storageへ保存
    未設定ならローカルファイルに保存する（開発用フォールバック）        */
 const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
@@ -95,8 +95,13 @@ function localWrite(p, data) {
 }
 
 function bundledStreamers() {
-  const data = localRead(path.join(__dirname, 'streamers.json'), []);
-  return Array.isArray(data) ? data : [];
+  const files = ['streamers.json', 'streamers_extra.json'];
+  const data = [];
+  files.forEach(fileName => {
+    const fileData = localRead(path.join(__dirname, fileName), []);
+    if (Array.isArray(fileData)) data.push(...fileData);
+  });
+  return data;
 }
 
 function normalizeStreamerText(value) {
@@ -458,6 +463,14 @@ function serveJsonFile(res, fileName) {
   }
 }
 
+function serveJsonData(res, data) {
+  res.writeHead(200, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store, no-cache, must-revalidate'
+  });
+  res.end(JSON.stringify(data, null, 2));
+}
+
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -470,7 +483,7 @@ const server = http.createServer(async (req, res) => {
 
   if (url === '/dock' && req.method === 'GET') { serveFile(res, 'streamer_dic_dock.html'); return; }
   if (url === '/overlay' && req.method === 'GET') { serveFile(res, 'streamer_dic_overlay.html'); return; }
-  if (url === '/streamers.json' && req.method === 'GET') { serveJsonFile(res, 'streamers.json'); return; }
+  if (url === '/streamers.json' && req.method === 'GET') { serveJsonData(res, bundledStreamers()); return; }
   if (url.startsWith('/uploads/') && req.method === 'GET') { serveUpload(res, url); return; }
 
   if (url === '/api/streamers' && req.method === 'GET') {
