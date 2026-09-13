@@ -3,250 +3,221 @@
     "name": "ポケカメン",
     "yomi": "ポケカメン",
     "photoUrl": "https://ignewsimg.s3.ap-northeast-1.wasabisys.com/CmocGJMpWbF",
-    "activePeriod": "少なくとも2020年からツイキャス人気録画・YouTubeで大規模活動を確認。2026年現在もツイキャス、KICK、YouTube、Xで活動。",
-    "style": "晒し系YouTuber / 暴露系配信 / 歌い手 / ちょこらび / ツイキャス / KICK / YouTubeライブ",
+    "activePeriod": "少なくとも2019年からツイキャス人気録画を確認。2026年現在もツイキャス、YouTube、KICK、Xで活動。",
+    "style": "暴露系YouTuber / 晒し系歌い手 / ちょこらび / ツイキャス / KICK / 歌い手界隈・配信者界隈の炎上ウォッチ",
     "birth": "1999年11月15日生まれと紹介されることがある。",
     "origin": "福岡県出身と紹介されることがある。",
     "sites": [
-      {
-        "name": "ツイキャス",
-        "id": "@GC5R5OGIKgV0yvz"
-      },
-      {
-        "name": "X",
-        "id": "@GC5R5OGIKgV0yvz"
-      },
-      {
-        "name": "YouTube",
-        "id": "ポケカメン"
-      },
-      {
-        "name": "KICK",
-        "id": "配信内で使用"
-      }
+      { "name": "ツイキャス", "id": "https://twitcasting.tv/GC5R5OGIKgV0yvz" },
+      { "name": "X", "id": "https://x.com/GC5R5OGIKgV0yvz" },
+      { "name": "YouTube", "id": "https://www.youtube.com/@pokekamen" },
+      { "name": "KICK", "id": "https://kick.com/pokekamen" }
     ],
     "videos": [
-      {
-        "title": "ポケカメンが女性と寝落ち通話発覚としてノック枠で扱われる",
-        "url": "https://www.youtube.com/watch?v=Zo-DCyVy7hI"
-      },
-      {
-        "title": "ノック枠でポケカメンの携帯・アイドルやり取りを扱う",
-        "url": "https://youtube.com/live/HdcCZPksdhc"
-      },
-      {
-        "title": "ツイキャス人気録画：コレコレさんと配信者に会いに行く",
-        "url": "https://premier.twitcasting.tv/gc5r5ogikgv0yvz"
-      },
-      {
-        "title": "ツイキャス人気録画：ASMR配信者暴露枠",
-        "url": "https://premier.twitcasting.tv/gc5r5ogikgv0yvz"
-      },
-      {
-        "title": "ツイキャス人気録画：盗撮・ストーカー相談系",
-        "url": "https://premier.twitcasting.tv/gc5r5ogikgv0yvz"
-      },
-      {
-        "title": "コレコレ公式切り抜き：ポケカメンの彼女が配信者と浮気",
-        "url": "https://www.youtube.com/watch?v=9g2c4IFwT5o"
-      },
-      {
-        "title": "ポケカメン切り抜き：ノックの彼女への発言炎上",
-        "url": "https://www.youtube.com/watch?v=45Ha66qlImI"
-      }
+      { "title": "ニコキャス公式配信", "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/575741422" },
+      { "title": "ASMR配信", "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/598329787" },
+      { "title": "コレコレさんと配信者さん達に会いに行く", "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/625387900" },
+      { "title": "ASMR配信者の暴露", "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/638522831" },
+      { "title": "有名歌い手がついに炎上した件", "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/667251046" },
+      { "title": "ガチでやばい歌い手の暴露", "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/729704814" },
+      { "title": "いれいす/ないこ・シクフォニ編集者トラブル報道", "url": "https://news.allabout.co.jp/articles/o/52348/" },
+      { "title": "ノック切り抜き：ポケカメン告発女性に本人ブチギレ", "url": "https://www.youtube.com/watch?v=3xMrz6KlxgY" },
+      { "title": "ノック枠：ポケカメン女性との寝落ち通話発覚", "url": "https://www.youtube.com/watch?v=Zo-DCyVy7hI" },
+      { "title": "ポケカメン切り抜き：ノックの彼女への発言炎上", "url": "https://www.youtube.com/watch?v=45Ha66qlImI" },
+      { "title": "KICK：ノックさん暴露！！今から復讐する！！", "url": "https://kick.com/pokekamen/videos/41c26af4-" }
     ],
     "timeline": [
       {
+        "date": "2019年11月2日",
+        "title": "ニコキャス公式配信で凸待ち枠が伸びる",
+        "text": "ツイキャスの人気録画として、ニコキャス公式配信の凸待ち枠が残る。暴露・通話・凸待ちを軸に固定視聴者を集めていた初期の代表素材。",
+        "imageUrl": "https://twitcasting.tv/gc5r5ogikgv0yvz/twimage/575741422",
+        "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/575741422"
+      },
+      {
         "date": "2020年3月9日",
-        "title": "ツイキャス人気録画にASMR枠が残る",
-        "text": "ツイキャス公式の人気録画一覧に、ポケカメンのASMR系配信が大きな再生数で残る。晒し・暴露だけでなく、歌い手/配信者として固定ファンを抱えていた時期の代表的な素材。",
-        "imageUrl": "",
-        "url": "https://premier.twitcasting.tv/gc5r5ogikgv0yvz"
+        "title": "ASMR配信が人気録画に残る",
+        "text": "ASMR系の配信がツイキャス人気録画に残る。晒し・暴露だけでなく、歌い手/配信者として固定ファンを持っていた時期の素材。",
+        "imageUrl": "https://twitcasting.tv/gc5r5ogikgv0yvz/twimage/598329787",
+        "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/598329787"
       },
       {
         "date": "2020年6月30日",
         "title": "コレコレさんと配信者に会いに行く人気録画",
-        "text": "ツイキャス人気録画に『コレコレさんと配信者に会いに行く』が残る。コレコレ周辺・配信者同士の接触をコンテンツ化していた時期として入れる。",
-        "imageUrl": "",
-        "url": "https://premier.twitcasting.tv/gc5r5ogikgv0yvz"
+        "text": "コレコレ周辺・配信者同士の接触をコンテンツ化した回が人気録画として残る。後年の配信者界隈暴露につながる動きとして重要。",
+        "imageUrl": "https://twitcasting.tv/gc5r5ogikgv0yvz/twimage/625387900",
+        "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/625387900"
       },
       {
         "date": "2020年9月3日",
-        "title": "ASMR配信者暴露枠が人気録画化",
-        "text": "ツイキャス人気録画でASMR配信者暴露枠が確認できる。後年まで続く『界隈の問題を配信で扱う』型の初期代表例。",
-        "imageUrl": "",
-        "url": "https://premier.twitcasting.tv/gc5r5ogikgv0yvz"
+        "title": "ASMR配信者暴露枠が大型人気録画化",
+        "text": "ASMR配信者をめぐる暴露枠が人気録画に残る。歌い手/配信者界隈の揉め事を配信で大きく見せるスタイルの初期代表例。",
+        "imageUrl": "https://twitcasting.tv/gc5r5ogikgv0yvz/twimage/638522831",
+        "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/638522831"
       },
       {
-        "date": "2022年3月ごろ",
-        "title": "すとぷり周辺騒動を連日配信で扱う",
-        "text": "すとぷり周辺の炎上期に、ポケカメンが関連話題を連日配信で扱っていたことが複数の配信履歴から確認できる。歌い手界隈の大炎上を追う晒し系配信者として認知が広がる。",
-        "imageUrl": "",
-        "url": "https://ssl.twitcasting.tv/8icoeithgybnh5v/archive?page=11-726756702&type=history&watchable=1"
+        "date": "2021年2月14日",
+        "title": "有名歌い手炎上を扱う大型配信",
+        "text": "有名歌い手の炎上を扱う枠が人気録画に残る。歌い手界隈の炎上を配信で追うポケカメンの方向性がはっきり出た回。",
+        "imageUrl": "https://twitcasting.tv/gc5r5ogikgv0yvz/twimage/667251046",
+        "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/667251046"
       },
       {
-        "date": "2022年11月10日〜11日",
+        "date": "2022年4月27日",
+        "title": "ガチでやばい歌い手の暴露枠が人気化",
+        "text": "歌い手をめぐる暴露枠が人気録画に残る。歌い手活動と晒し系配信が重なるポケカメンの立ち位置を示す素材。",
+        "imageUrl": "https://twitcasting.tv/gc5r5ogikgv0yvz/twimage/729704814",
+        "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/729704814"
+      },
+      {
+        "date": "2022年11月10日〜14日",
         "title": "いれいす・ないこ/シクフォニ編集者トラブルを暴露",
-        "text": "いれいす、ないこ、シクフォニ動画編集者をめぐるトラブルをゆきむら。や鬱くんと扱い、関連ワードがXトレンド入り、YouTube急上昇にも載ったと報じられた。歌い手界隈の内部揉めを大きく広げた代表案件。",
-        "imageUrl": "",
+        "text": "いれいす、ないこ、シクフォニ動画編集者をめぐるトラブルを配信で扱い、関連ワードがXトレンド入り、YouTube急上昇にも載ったと報じられた。歌い手界隈の内部揉めを大きく広げた代表案件。",
+        "imageUrl": "https://ix-news.aacdn.jp/aa_news/article/2022/11/11/636e4c94a9625.jpeg?im=AspectCrop=(16,9);Resize=(1600,900)",
         "url": "https://news.allabout.co.jp/articles/o/52348/"
       },
       {
         "date": "2022年12月31日",
         "title": "盗撮・ストーカー相談系の人気録画",
-        "text": "ツイキャス人気録画に、盗撮・ストーカーを扱う長時間枠が確認できる。視聴者相談や被害告発を配信化するポケカメンの持ち味が強く出た回。",
-        "imageUrl": "",
-        "url": "https://premier.twitcasting.tv/gc5r5ogikgv0yvz"
+        "text": "盗撮・ストーカー相談を扱う長時間枠がツイキャス人気録画に残る。視聴者相談や被害告発を配信化するポケカメンの持ち味が強く出た回。",
+        "imageUrl": "https://twitcasting.tv/gc5r5ogikgv0yvz/twimage/755390738",
+        "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/755390738"
       },
       {
         "date": "2024年1月20日",
         "title": "未成年ファンの顔・本名晒しで大炎上",
-        "text": "イベント出禁にした未成年ファンが再来場した件で、ポケカメンが相手の顔や本名を公開し大炎上。本人取材で、弁護士から名誉毀損の可能性を指摘されたが許せなかったという趣旨の説明をしている。",
-        "imageUrl": "https://shuon.ismcdn.jp/mwimgs/c/9/-/img_c9b7ee090ed054ce395cda1675a6ac1e324546.jpg",
+        "text": "イベント出禁にした未成年ファンが再来場した件で、相手の顔や本名を公開し大炎上。本人取材でも弁護士から名誉毀損の可能性を指摘されたが許せなかったという趣旨を説明している。",
+        "imageUrl": "https://shuon.ismcdn.jp/mwimgs/c/9/1200xm/img_c9b7ee090ed054ce395cda1675a6ac1e324546.jpg",
         "url": "https://shueisha.online/articles/-/190589?disp=paging&page=1"
       },
       {
         "date": "2024年5月3日",
-        "title": "ポケカメン彼女・せらちゃん/たくみ浮気騒動をコレコレ公式切り抜き化",
-        "text": "恋愛禁止と見られていたポケカメンに彼女がいたこと、せらちゃんとたくみの浮気、妊娠発言の真偽などがコレコレ配信で扱われ、公式切り抜きとして公開された。ノックも通話参加し、ライブ前日の大炎上案件として拡散。",
-        "imageUrl": "",
-        "url": "https://www.youtube.com/watch?v=9g2c4IFwT5o"
+        "title": "彼女・せらちゃん/たくみ浮気騒動が切り抜き化",
+        "text": "恋愛禁止と見られていたポケカメンに彼女がいたこと、せらちゃんとたくみの浮気、妊娠発言の真偽などがコレコレ配信で扱われたとまとめられ、ノックも通話参加。ライブ前日の大炎上案件として拡散した。",
+        "imageUrl": "https://rscnews.com/wp-content/uploads/2024/05/0-2024-05-06T215830.399.jpg",
+        "url": "https://yutura.net/channel/43401/video/9g2c4IFwT5o/?n=1"
       },
       {
         "date": "2024年9月18日",
         "title": "ゆりにゃ関連の告訴・住所晒し・法的措置騒動",
-        "text": "ゆりにゃから刑事告訴されたとの情報、自宅住所晒し、著作権問題、警察署で話したという説明がユーチュラで報じられた。ポケカメン側も法的措置の姿勢を示し、暴露配信者同士の法的対立として話題になった。",
-        "imageUrl": "",
+        "text": "ゆりにゃから刑事告訴されたとの情報、自宅住所晒し、著作権問題、警察署で話したという説明が報じられた。暴露配信者同士の法的対立として話題化。",
+        "imageUrl": "https://media.yutura.net/news/wp-content/uploads/2024/09/maxresdefault-42.jpg",
         "url": "https://yutura.net/news/archives/122953"
       },
       {
-        "date": "2024年10月ごろ",
-        "title": "ちぐさくん脱退・noteをめぐる暴露合戦",
-        "text": "AMPTAKxCOLORSのちぐさくん脱退・noteをめぐる騒動で、ポケカメンが周辺情報を扱ったと複数まとめで確認できる。歌い手グループ炎上に切り込む晒し系としての動き。",
-        "imageUrl": "",
-        "url": "https://funnews-cafe.com/2024/10/09/amptakxcolors-chigusa/"
+        "date": "2025年4月22日",
+        "title": "luz大麻グミ疑惑を巡ってJ-CASTに報じられる",
+        "text": "歌い手luzの飲み会での大麻グミ疑惑を配信で扱い、luz本人が関与を否定。通話打診やLINEスクショ公開を含め、X上で舌戦になった。",
+        "imageUrl": "https://www.j-cast.com/assets_c/2025/04/news_20250422160913-thumb-645xauto-317612.jpg",
+        "url": "https://www.j-cast.com/2025/04/22503719.html?p=all"
       },
       {
-        "date": "2025年4月19日〜22日",
-        "title": "luz『大麻グミ』疑惑を配信で扱いXで舌戦",
-        "text": "歌い手luzの飲み会での『大麻グミ』疑惑をポケカメンが配信で扱い、luz本人が関与を否定。ポケカメンは通話打診やLINEスクショ公開を行い、X上で舌戦になった。",
-        "imageUrl": "",
-        "url": "https://www.j-cast.com/2025/04/22503719.html"
-      },
-      {
-        "date": "2025年6月22日〜25日",
+        "date": "2025年6月25日",
         "title": "ちょこらび運営社長との喧嘩、ライブ辞退宣言を撤回",
-        "text": "ポケカメンがXで社長とのトラブルを理由にライブ辞退や個人ワンマン中止を宣言。その後ツイキャスで和解し、釣りツイートをしたことを謝罪したと報じられた。",
-        "imageUrl": "",
-        "url": "https://www.j-cast.com/2025/06/25505446.html"
+        "text": "Xで社長とのトラブルを理由にライブ辞退や個人ワンマン中止を宣言。その後ツイキャスで和解し、釣りツイートをしたことを謝罪したと報じられた。",
+        "imageUrl": "https://www.j-cast.com/assets_c/2025/06/news_20250625125835-thumb-645xauto-323546.jpg",
+        "url": "https://www.j-cast.com/2025/06/25505446.html?p=all"
       },
       {
         "date": "2025年8月31日〜9月5日",
-        "title": "iLiFE!若葉のあ暴露を謝罪、虚言可能性に言及",
-        "text": "iLiFE!若葉のあをめぐる暴露について、相手側説明やリーク者の虚言可能性を踏まえポケカメンが謝罪。アイドル暴露の裏取り不足が批判された。",
-        "imageUrl": "",
+        "title": "iLiFE!若葉のあ暴露を謝罪、情報の虚偽可能性に言及",
+        "text": "iLiFE!若葉のあをめぐる暴露について、相手側説明やリーク者の虚言可能性を踏まえ謝罪。アイドル暴露の裏取り不足が批判された。",
+        "imageUrl": "https://media.yutura.net/news/wp-content/uploads/2025/09/8acbdfcf871200e45849e1c352a5a9cc-640x396.jpg",
         "url": "https://yutura.net/news/archives/141357"
       },
       {
         "date": "2025年9月24日〜25日",
         "title": "アイドル事務所の圧力でYouTube1週間停止と報告",
-        "text": "ポケカメンがXで、アイドル事務所側の圧力によりYouTube動画削除と1週間停止になったと報告。iLiFE!周辺暴露が原因ではないかと報じられた。",
-        "imageUrl": "",
+        "text": "Xで、アイドル事務所側の圧力によりYouTube動画削除と1週間停止になったと報告。iLiFE!周辺暴露が原因ではないかと報じられた。",
+        "imageUrl": "https://media.yutura.net/news/wp-content/uploads/2025/09/bc02ad82d3aa374a382081c8e5d646a3.jpg",
         "url": "https://yutura.net/news/archives/142326"
       },
       {
         "date": "2025年12月1日",
         "title": "VOISING権利侵害注意喚起を受けて通話予告",
-        "text": "VOISINGが権利侵害への注意喚起を出したタイミングで、ポケカメンが関係者との通話を予告したと報じられた。歌い手事務所と暴露系配信者の緊張が表に出た案件。",
-        "imageUrl": "",
-        "url": "https://yutura.net/news/archives/tag/%E3%83%9D%E3%82%B1%E3%82%AB%E3%83%A1%E3%83%B3"
+        "text": "VOISINGが権利侵害への注意喚起を出したタイミングで、関係者との通話を予告したと報じられた。歌い手事務所と暴露系配信者の緊張が表に出た案件。",
+        "imageUrl": "https://ytranking-net.s3.ap-northeast-1.amazonaws.com/news/wp-content/uploads/2025/12/voising.jpg",
+        "url": "https://yutura.net/news/archives/145976"
       },
       {
         "date": "2025年12月10日〜14日",
-        "title": "ノック側で女性関係・寝落ち通話・妨害が連日話題に",
-        "text": "ノックのツイキャス履歴で、『ポケカメンが女性と寝落ち通話発覚』『ポケカメンから妨害を受けました』『ポケカメン暴露』が連続して確認できる。ポケカメン本人の女性関係と配信者間対立が、別大手配信者側でも大きく扱われた。",
-        "imageUrl": "",
+        "title": "ノック側で女性関係・寝落ち通話・妨害が連日話題化",
+        "text": "ノックの配信履歴で、女性との寝落ち通話発覚、ポケカメンから妨害を受けたという主張、ポケカメン暴露が連続して確認できる。本人の女性関係と配信者間対立が、別大手配信者側でも大きく扱われた。",
+        "imageUrl": "https://i.ytimg.com/vi/Zo-DCyVy7hI/sddefault.jpg",
         "url": "https://www.youtube.com/watch?v=Zo-DCyVy7hI"
       },
       {
         "date": "2026年1月12日",
         "title": "DEATHDOL NOTE高校暴力動画、同意上と判明し物議",
-        "text": "DEATHDOL NOTEが拡散した福井県内高校の暴力動画について、ポケカメン配信に当事者が出演し、いじめではなく同意上だったと説明。晒し系の拡散と事実確認の問題として扱われた。",
-        "imageUrl": "",
+        "text": "高校内の暴力動画について、配信に当事者が出演し、いじめではなく同意上だったと説明。晒し系の拡散と事実確認の問題として扱われた。",
+        "imageUrl": "https://ytranking-net.s3.ap-northeast-1.amazonaws.com/news/wp-content/uploads/2026/01/maxresdefault-7-1.jpg",
         "url": "https://yutura.net/news/archives/148133"
       },
       {
-        "date": "2026年1月18日",
-        "title": "アイドル暴露の証拠動画が有料サービス特典と判明",
-        "text": "アイドル暴露で使われた証拠動画が、有料サービス特典の映像だったと報じられた。証拠の入手経路や有料コンテンツの扱いが問題化した。",
-        "imageUrl": "",
-        "url": "https://yutura.net/news/archives/tag/%E3%83%9D%E3%82%B1%E3%82%AB%E3%83%A1%E3%83%B3"
-      },
-      {
-        "date": "2026年4月8日",
+        "date": "2026年4月7日",
         "title": "20年ぶりに実父と再会",
-        "text": "ユーチュラのポケカメン関連記事一覧で、20年ぶりに実父と再会した話題が確認できる。炎上だけでなく、本人の家庭事情を配信コンテンツ化した回。",
-        "imageUrl": "",
-        "url": "https://yutura.net/news/archives/tag/%E3%83%9D%E3%82%B1%E3%82%AB%E3%83%A1%E3%83%B3"
+        "text": "20年ぶりに実父と再会した配信が人気録画として残る。炎上だけでなく、本人の家庭事情を配信コンテンツ化した回。",
+        "imageUrl": "https://twitcasting.tv/gc5r5ogikgv0yvz/twimage/833529888",
+        "url": "https://twitcasting.tv/gc5r5ogikgv0yvz/movie/833529888"
       },
       {
         "date": "2026年4月10日〜13日",
-        "title": "家長むぎ“裏垢”なりすまし拡散を謝罪",
-        "text": "ポケカメンが、にじさんじ所属VTuber家長むぎの裏垢だとして情報を発信。ANYCOLORが本人と無関係と否定し、ポケカメンは謝罪。なりすまし人物が3年間で50人以上のインフルエンサーを騙していたとされ、大炎上した。",
-        "imageUrl": "https://image.itmedia.co.jp/news/articles/2604/14/ts0153_narisumabakuro02.jpg",
+        "title": "家長むぎ裏垢なりすまし拡散を謝罪",
+        "text": "にじさんじ所属VTuber家長むぎの裏垢だとして情報を発信。ANYCOLORが本人と無関係と否定し、ポケカメンは謝罪。なりすまし人物が多数のインフルエンサーを騙していたとされ、大炎上した。",
+        "imageUrl": "https://media.yutura.net/news/wp-content/uploads/2026/04/Screenshot-2026-04-13-07.13.13.jpg",
         "url": "https://yutura.net/news/archives/153029"
       },
       {
         "date": "2026年4月14日",
         "title": "名誉毀損疑いで携帯2台押収と本人が明かす",
         "text": "KICK配信の冒頭で、早朝に警察が自宅へ来て携帯2台を押収されたと説明。名誉毀損関連の捜査だと本人が話し、コレコレとの通話でも書類を見せたと報じられた。",
-        "imageUrl": "",
+        "imageUrl": "https://media.yutura.net/news/wp-content/uploads/2026/04/Screenshot-2026-04-14-15.01.45.jpg",
         "url": "https://yutura.net/news/archives/153161"
       },
       {
         "date": "2026年6月8日〜9日",
         "title": "身の危険で東京を離れたと報告",
-        "text": "YouTubeで、住所バレや命を狙われるような予告があり東京を離れたと報告。警察への相談やスマホ押収の経緯にも触れ、暴露系活動の危険性が話題になった。",
-        "imageUrl": "",
+        "text": "住所バレや命を狙われるような予告があり東京を離れたと報告。警察への相談やスマホ押収の経緯にも触れ、暴露系活動の危険性が話題になった。",
+        "imageUrl": "https://media.yutura.net/news/wp-content/uploads/2026/06/videoframe_48689.jpg",
         "url": "https://yutura.net/news/archives/157276"
       },
       {
-        "date": "2026年6月18日",
-        "title": "地下アイドル二股・複数リスナー関係を自認、坊主土下座",
-        "text": "ポケカメンが地下アイドル2人との交際と複数リスナーとの関係について謝罪。Xでも謝罪文を出し、以後の12股騒動・地雷チャン引退につながる火種になった。",
-        "imageUrl": "",
-        "url": "https://x.com/GC5R5OGIKgV0yvz/status/2067663959579386009"
+        "date": "2026年6月12日",
+        "title": "告発女性に本人ブチギレ、Kick初配信に発展",
+        "text": "ノック切り抜きで、ポケカメンの告発に来た女性に本人が強く反応した回として公開。女性関係炎上がKICK初配信側にもつながった素材。",
+        "imageUrl": "https://i.ytimg.com/vi/3xMrz6KlxgY/hq720.jpg",
+        "url": "https://www.youtube.com/watch?v=3xMrz6KlxgY"
       },
       {
-        "date": "2026年6月19日",
-        "title": "コレコレが二股・9人浮気・隠蔽工作をXで指摘",
-        "text": "コレコレがXで、兎月ももと交際中に一ノ瀬ななとも関係し、さらにリスナー9人との浮気や隠蔽工作があったと指摘。ポケカメン本人の女性関係炎上が界隈全体に広がった。",
-        "imageUrl": "",
-        "url": "https://yutura.net/news/archives/157933"
+        "date": "2026年6月18日〜19日",
+        "title": "地下アイドル二股・複数リスナー関係を自認、坊主土下座",
+        "text": "地下アイドル2人との交際と複数リスナーとの関係について謝罪。Xでも謝罪文を出し、以後の12股騒動・地雷チャン引退につながる火種になった。",
+        "imageUrl": "https://media.yutura.net/news/wp-content/uploads/2026/06/po.jpg",
+        "url": "https://x.com/GC5R5OGIKgV0yvz/status/2067663959579386009"
       },
       {
         "date": "2026年6月20日",
         "title": "地雷チャンが12股発覚を理由に推し活引退",
-        "text": "地雷チャンがXで「大切なお知らせ」を出し、ユーチュラ取材でもポケカメンの12股女性問題が推し活引退の決め手だったと説明。記事では、地雷チャン自身も2025年10月ごろから関係を持つようになったと明かした。",
-        "imageUrl": "",
+        "text": "地雷チャンがXで大切なお知らせを出し、ユーチュラ取材でもポケカメンの12股女性問題が推し活引退の決め手だったと説明。本人女性関係炎上が推し活側へ波及した案件。",
+        "imageUrl": "https://media.yutura.net/news/wp-content/uploads/2026/06/HLG8fIsaoAAbHE6-e1781945502303.jpeg",
         "url": "https://x.com/amatsuuni/status/2068144586653065222"
       },
       {
         "date": "2026年6月30日",
-        "title": "ノックの彼女への「妊娠できなかったら別れる」発言炎上を切り抜き化",
-        "text": "ポケカメンの切り抜きまとめに、ノックの彼女への「妊娠できなかったら別れる」発言炎上を扱った動画が掲載。ノックの結婚/彼女周辺を視聴者が追う導線として重要。",
-        "imageUrl": "",
+        "title": "ノックの彼女への発言炎上を切り抜き化",
+        "text": "ノックの彼女への発言炎上を扱った動画が切り抜きとして公開。ノックの結婚/彼女周辺を視聴者が追う導線として重要。",
+        "imageUrl": "https://i.ytimg.com/vi/45Ha66qlImI/hq720.jpg",
         "url": "https://www.youtube.com/watch?v=45Ha66qlImI"
       },
       {
-        "date": "2026年7月ごろ",
-        "title": "養分事件・命ネタ・もんじょり周辺炎上を連日扱う",
-        "text": "ノックや他配信者のツイキャス/KICK履歴に、ポケカメン、もんじょり、命ネタ、養分事件などの連続トピックが残る。2026年夏の配信者炎上群の中心素材の一つとして扱われた。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
+        "date": "2026年9月12日",
+        "title": "KICKでノックさん暴露配信を実施",
+        "text": "KICKで『ノックさん暴露！！今から復讐する！！』を配信。ポケカメンとノックの対立・暴露導線が2026年9月時点でも続いていることを示す近時素材。",
+        "imageUrl": "https://images.kick.com/video_thumbnails/abpPHYYojLih/VqObSZHFSQG7/720.webp",
+        "url": "https://kick.com/pokekamen/videos/41c26af4-"
       }
     ],
-    "intro": "暴露系YouTuber、晒し系歌い手、ツイキャス主、KICK配信者。ちょこらびメンバーとしての歌い手活動と、配信界隈・歌い手界隈・VTuber界隈の揉め事を拾って配信で拡散するスタイルの両面を持つ。\n\n代表的な話題は、いれいす/ないこ周辺暴露、未成年ファンの顔・本名晒し、ゆりにゃ関連の告訴・住所晒し騒動、luz大麻グミ疑惑をめぐる舌戦、ちょこらび運営社長との喧嘩とライブ辞退撤回、iLiFE!若葉のあ暴露謝罪、アイドル事務所の圧力によるYouTube停止報告、VOISING権利侵害注意喚起周辺、DEATHDOL NOTE高校暴力動画、家長むぎなりすまし拡散謝罪、名誉毀損疑いで携帯2台押収、身の危険による引っ越し、地下アイドル二股・複数リスナー関係自認、地雷チャンの12股引退騒動など。\n\n紹介するなら『歌い手界隈と暴露配信をまたぎ、事件・疑惑・人間関係を大きな配信ネタに変える晒し系配信者』。本人が中心になって燃えた案件が多く、図鑑では“扱った事件”ではなく“ポケカメン本人が批判や炎上の中心になった件”を太く見せる。\n\n追記確認：2024年5月のせらちゃん/たくみ浮気騒動、2026年6月の地下アイドル二股・複数リスナー関係、地雷チャン12股引退、ノック彼女への発言炎上切り抜きまで、本人が炎上中心になった女性関係の主要導線を年表に含めている。",
+    "intro": "暴露系YouTuber、晒し系歌い手、ツイキャス主、KICK配信者。ちょこらびメンバーとしての歌い手活動と、配信界隈・歌い手界隈・VTuber界隈の揉め事を配信で扱う晒し系の顔を併せ持つ。\n\n本人が中心になった主な話題は、未成年ファンの顔・本名晒し、ゆりにゃ関連の告訴/住所晒し騒動、luz大麻グミ疑惑を巡る舌戦、ちょこらび運営社長との喧嘩とライブ辞退撤回、iLiFE!若葉のあ暴露謝罪、アイドル事務所の圧力によるYouTube停止報告、VOISING権利侵害注意喚起周辺、DEATHDOL NOTE高校暴力動画、家長むぎなりすまし拡散謝罪、名誉毀損疑いで携帯2台押収、身の危険による引っ越し、地下アイドル二股・複数リスナー関係自認、地雷チャン12股引退、ノック彼女発言炎上切り抜きなど。\n\n紹介するなら『歌い手界隈と暴露配信をまたぎ、他人を晒す側から自分も晒される側まで全部コンテンツ化される配信者』。疑惑・告発系は断定せず、本人説明、報道、Xでの拡散、配信上の証言として扱う。",
     "id": "pokekamen",
     "bodyImageUrl": ""
   },
@@ -254,336 +225,280 @@
     "name": "ノック",
     "yomi": "ノック",
     "photoUrl": "",
-    "activePeriod": "少なくとも2021年以前からツイキャスで大型録画を確認。2026年現在もツイキャス、KICK、YouTube、Xで活動。",
+    "activePeriod": "少なくとも2020年以前からツイキャスで大型録画を確認。2026年現在もツイキャス、YouTube、KICK、Xで活動。",
     "style": "ツイキャス相談配信 / KICK / YouTubeライブ / コレコレ周辺レイドトーク / 配信者ニュース / 炎上・暴露系雑談",
     "birth": "2026年6月23日枠で30歳になったと配信タイトルに記録。",
     "origin": "",
     "sites": [
-      {
-        "name": "ツイキャス",
-        "id": "@knock2525"
-      },
-      {
-        "name": "YouTube",
-        "id": "@knock2525"
-      },
-      {
-        "name": "KICK",
-        "id": "kick.com/knock2525"
-      },
-      {
-        "name": "X",
-        "id": "@knock2525"
-      }
+      { "name": "ツイキャス", "id": "https://twitcasting.tv/knock2525" },
+      { "name": "YouTube", "id": "https://www.youtube.com/@knock2525" },
+      { "name": "KICK", "id": "https://kick.com/knock2525" },
+      { "name": "X", "id": "https://x.com/knock2525" }
     ],
     "videos": [
-      {
-        "title": "有名キャス主信号無視しすぎw",
-        "url": "https://youtube.com/live/N4G-moJa4Do"
-      },
-      {
-        "title": "ツイキャス荒れすぎｗ",
-        "url": "https://youtube.com/live/PoBnZi2fG2M"
-      },
-      {
-        "title": "配信活動の歴史",
-        "url": "https://youtube.com/live/31sjdFum4UE"
-      },
-      {
-        "title": "たくみ逮捕！もんじょり逮捕寸前！",
-        "url": "https://youtube.com/live/Huk3fcfLSsc"
-      },
-      {
-        "title": "配信大荒れ",
-        "url": "https://youtube.com/live/XCqcR3WzAIU"
-      },
-      {
-        "title": "ポケカメンが女性と寝落ち通話発覚！",
-        "url": "https://www.youtube.com/watch?v=Zo-DCyVy7hI"
-      },
-      {
-        "title": "石川典行座談会・コレコレ旅行・ポケカメン告発系",
-        "url": "https://youtube.com/live/HdcCZPksdhc"
-      },
-      {
-        "title": "秘蔵エピソード公開",
-        "url": "https://youtube.com/live/m-2esIjqCh8"
-      },
-      {
-        "title": "ハッキングされた",
-        "url": "https://youtube.com/live/Doq29JJOKGQ"
-      },
-      {
-        "title": "コレコレ公式切り抜き：ポケカメン彼女・せらちゃん・たくみ浮気騒動でノックが通話参加",
-        "url": "https://www.youtube.com/watch?v=9g2c4IFwT5o"
-      },
-      {
-        "title": "ポケカメン切り抜き：ノックの彼女への発言炎上",
-        "url": "https://www.youtube.com/watch?v=45Ha66qlImI"
-      }
+      { "title": "2020年女性関係炎上の報道", "url": "https://yutura.net/news/archives/21946" },
+      { "title": "ツイキャス人気録画：2021年9月9日", "url": "https://twitcasting.tv/knock2525/movie/700325909" },
+      { "title": "有名キャス主信号無視しすぎw", "url": "https://youtube.com/live/N4G-moJa4Do" },
+      { "title": "ツイキャス荒れすぎｗ", "url": "https://youtube.com/live/PoBnZi2fG2M" },
+      { "title": "配信活動の歴史", "url": "https://youtube.com/live/31sjdFum4UE" },
+      { "title": "たくみ逮捕！もんじょり逮捕寸前！", "url": "https://youtube.com/live/Huk3fcfLSsc" },
+      { "title": "配信大荒れ", "url": "https://youtube.com/live/XCqcR3WzAIU" },
+      { "title": "ポケカメンが女性と寝落ち通話発覚！", "url": "https://www.youtube.com/watch?v=Zo-DCyVy7hI" },
+      { "title": "石川典行座談会・コレコレ旅行・ポケカメン告発系", "url": "https://youtube.com/live/HdcCZPksdhc" },
+      { "title": "秘蔵エピソード公開", "url": "https://youtube.com/live/m-2esIjqCh8" },
+      { "title": "ハッキングされた", "url": "https://youtube.com/live/Doq29JJOKGQ" },
+      { "title": "ノックの彼女への発言炎上", "url": "https://www.youtube.com/watch?v=45Ha66qlImI" },
+      { "title": "KICK：キック配信者荒れすぎ。許せねーよ！！", "url": "https://kick.com/knock2525/videos/6f0af316c77818bb-" },
+      { "title": "親族の挨拶してきた。。", "url": "https://twitcasting.tv/knock2525/movie/840231502" }
     ],
     "timeline": [
       {
+        "date": "2020年2月21日",
+        "title": "彼女の妊娠・中絶、別女性ファンとの関係で批判殺到",
+        "text": "交際相手の妊娠・中絶、別女性ファンとの関係をめぐり、本人が批判の中心になったと報じられた。ノック本人の女性関係炎上として、以後の結婚/彼女周辺を見るうえで外せない初期案件。",
+        "imageUrl": "https://i0.wp.com/ytranking-net.s3.ap-northeast-1.amazonaws.com/blog/wp-content/uploads/2020/02/0947636c64f1da0af6c74c12e6dbf0d8-e1582877104575.png?fit=480%2C480&ssl=1",
+        "url": "https://yutura.net/news/archives/21946"
+      },
+      {
         "date": "2021年9月9日",
         "title": "ツイキャスで4時間超・3万人級の人気録画",
-        "text": "ツイキャス人気録画に、4時間超で3万人級の録画が残る。ノックが固定リスナーを持つ大型キャス主として見られていた基礎データ。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=popular"
+        "text": "4時間超で3万人級の録画がツイキャスに残る。固定リスナーを抱えた大型キャス主として見られていた基礎データ。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/700325909",
+        "url": "https://twitcasting.tv/knock2525/movie/700325909"
       },
       {
         "date": "2022年5月31日",
         "title": "YouTubeアーカイブ付き大型録画が残る",
-        "text": "ツイキャス人気録画にYouTubeアーカイブ付きの配信が残る。ツイキャスとYouTubeを併用して、配信後も切り抜き・アーカイブとして見せる導線ができていた。",
-        "imageUrl": "",
+        "text": "ツイキャスとYouTubeを併用し、配信後もアーカイブとして見せる導線が確認できる。",
+        "imageUrl": "https://i.ytimg.com/vi/yPWi0tXEG-Y/sddefault.jpg",
         "url": "https://youtu.be/yPWi0tXEG-Y"
+      },
+      {
+        "date": "2022年8月31日",
+        "title": "YouTube公開案内付きツイキャス録画が人気化",
+        "text": "ツイキャス人気録画にYouTube公開案内付きの配信が残る。ツイキャスからYouTubeへ視聴導線を伸ばす運用が定着していた。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/743650193",
+        "url": "https://twitcasting.tv/knock2525/movie/743650193"
       },
       {
         "date": "2023年7月1日",
         "title": "YouTubeライブ連動の大型ツイキャス録画",
-        "text": "YouTubeライブ連動のツイキャス録画が確認できる。雑談・相談・配信者ニュースを、ツイキャスとYouTube双方に残す運用が定着した時期。",
-        "imageUrl": "",
+        "text": "YouTubeライブ連動のツイキャス録画が確認できる。雑談・相談・配信者ニュースを複数プラットフォームに残す運用が見える。",
+        "imageUrl": "https://i.ytimg.com/vi/bVTMTQkPwlw/hq720.jpg",
         "url": "https://youtube.com/live/bVTMTQkPwlw"
       },
       {
         "date": "2024年5月3日",
-        "title": "ポケカメン彼女・せらちゃん/たくみ浮気騒動でノックが通話参加",
-        "text": "コレコレ公式切り抜きで、ポケカメンの彼女・せらちゃん、たくみの浮気騒動が扱われ、ノックも相談を受けていた側として通話参加。ノックが暴露側として絡んだ代表的な周辺炎上。",
-        "imageUrl": "",
-        "url": "https://www.youtube.com/watch?v=9g2c4IFwT5o"
+        "title": "ポケカメン彼女・せらちゃん/たくみ浮気騒動で通話参加",
+        "text": "ポケカメンの彼女・せらちゃん、たくみの浮気騒動が扱われた配信で、ノックも相談を受けていた側として通話参加。ノックが暴露側として絡んだ代表的な周辺炎上。",
+        "imageUrl": "https://rscnews.com/wp-content/uploads/2024/05/0-2024-05-30T135138.801.jpg",
+        "url": "https://yutura.net/channel/43401/video/9g2c4IFwT5o/?n=1"
       },
       {
         "date": "2025年7月9日",
-        "title": "有名キャス主信号無視しすぎwをYouTubeアーカイブ化",
-        "text": "有名キャス主の信号無視を取り上げる枠をYouTubeライブでアーカイブ化。配信者の外配信・迷惑行為を切り出して視聴者に見せる、ノックの炎上ウォッチ系素材。",
-        "imageUrl": "",
+        "title": "有名キャス主信号無視しすぎwをYouTube化",
+        "text": "有名キャス主の信号無視を取り上げる枠をYouTubeライブでアーカイブ化。外配信・迷惑行為を切り出して視聴者に見せる炎上ウォッチ系素材。",
+        "imageUrl": "https://i.ytimg.com/vi/N4G-moJa4Do/hq720.jpg",
         "url": "https://youtube.com/live/N4G-moJa4Do"
       },
       {
         "date": "2025年8月5日",
-        "title": "もんじょりとの秘話公開が5.5万再生級",
-        "text": "ツイキャス履歴で、もんじょりとの秘話公開が高再生の話題として残る。ふわっち・ツイキャス・KICK周辺の迷惑系/炎上系配信者との接点が強い。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?page=3-808166904&type=history&watchable=1"
-      },
-      {
-        "date": "2025年8月21日〜23日",
-        "title": "YouTube BAN・ツイキャスBAN・ポケカメン大炎上を連続で扱う",
-        "text": "ツイキャス履歴に『YouTubeがBANされた！助けて！』『ツイキャスがbanされました』『ポケカメン大炎上wwww』が連続して残る。BAN報告と他配信者炎上を同時期に扱う荒れた期間。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?page=3-808166904&type=history&watchable=1"
+        "title": "深夜にコレコレから緊急連絡が来る枠が人気化",
+        "text": "ツイキャスで、深夜にコレコレから緊急連絡が来る枠が人気録画として残る。コレコレ周辺との近さを示す素材。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/808166904",
+        "url": "https://twitcasting.tv/knock2525/movie/808166904"
       },
       {
         "date": "2025年8月23日",
         "title": "有名キャス主の海老蔵と通話",
-        "text": "『有名キャス主の海老蔵と通話！』としてYouTubeアーカイブ付きで残る。配信者同士の通話・レイド・界隈人間関係をコンテンツ化するノックの代表素材。",
-        "imageUrl": "",
+        "text": "有名キャス主の海老蔵と通話した回がYouTubeアーカイブとして残る。配信者同士の通話・界隈人間関係をコンテンツ化する代表素材。",
+        "imageUrl": "https://i.ytimg.com/vi/Z_9P3sYmp_g/hq720.jpg",
         "url": "https://youtube.com/live/Z_9P3sYmp_g"
       },
       {
         "date": "2025年9月10日",
-        "title": "コレコレ旅行中とツイキャス荒れすぎ枠",
-        "text": "ツイキャス履歴に『コレコレさんと旅行中！』と、同日深夜の『ツイキャス荒れすぎｗ』YouTubeアーカイブが残る。コレコレ周辺との近さと、配信者界隈の荒れを扱う流れが同時に見える。",
-        "imageUrl": "",
+        "title": "コレコレ旅行中・ツイキャス荒れすぎ枠",
+        "text": "コレコレ旅行中の流れと、同日深夜のツイキャス荒れすぎ枠が残る。コレコレ周辺との近さと、配信者界隈の荒れを扱う流れが同時に見える。",
+        "imageUrl": "https://i.ytimg.com/vi/PoBnZi2fG2M/hq720.jpg",
         "url": "https://youtube.com/live/PoBnZi2fG2M"
       },
       {
         "date": "2025年9月19日",
         "title": "配信活動の歴史をYouTubeアーカイブ化",
-        "text": "『配信活動の歴史！！』というYouTubeライブアーカイブが残る。本人の配信者としての履歴を振り返る基礎素材として使える。",
-        "imageUrl": "",
+        "text": "本人の配信活動の歴史を振り返るYouTubeライブアーカイブ。ノックを初見に説明する素材として使える。",
+        "imageUrl": "https://i.ytimg.com/vi/31sjdFum4UE/hq720.jpg",
         "url": "https://youtube.com/live/31sjdFum4UE"
       },
       {
         "date": "2025年10月3日",
         "title": "たくみ逮捕・もんじょり逮捕寸前を大型配信で扱う",
-        "text": "『たくみ逮捕！もんじょり逮捕寸前！』というYouTubeライブが確認できる。迷惑系・事件系配信者の警察沙汰を追う、ノックの炎上ウォッチ枠。",
-        "imageUrl": "",
+        "text": "迷惑系・事件系配信者の警察沙汰を追う炎上ウォッチ枠として、たくみ逮捕やもんじょり逮捕寸前を扱ったYouTubeライブが残る。",
+        "imageUrl": "https://i.ytimg.com/vi/Huk3fcfLSsc/hq720.jpg",
         "url": "https://youtube.com/live/Huk3fcfLSsc"
       },
       {
         "date": "2025年10月17日",
         "title": "配信大荒れをYouTubeアーカイブ化",
-        "text": "ツイキャス履歴に『配信大荒れ』が残り、YouTubeアーカイブも案内されている。界隈の揉め事や通話が荒れた回として代表素材に使える。",
-        "imageUrl": "",
+        "text": "界隈の揉め事や通話が荒れた回として、YouTubeライブアーカイブが残る。",
+        "imageUrl": "https://i.ytimg.com/vi/XCqcR3WzAIU/hq720.jpg",
         "url": "https://youtube.com/live/XCqcR3WzAIU"
       },
       {
         "date": "2025年10月27日",
         "title": "1000万円をホストに使った女性から緊急連絡",
-        "text": "ツイキャス履歴に、ホストに1000万円を使った女性からの緊急連絡を扱う配信が残る。相談・告発・当事者通話を引き出すノックの配信フォーマットが出ている。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
-      },
-      {
-        "date": "2025年10月28日",
-        "title": "YouTubeできなくなった part1/part2",
-        "text": "ツイキャス履歴に『YouTubeできなくなった』のpart1/part2が残る。BANや制限、配信プラットフォームとのトラブルを本人ネタとして見せている。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
+        "text": "ホストに1000万円を使った女性からの緊急連絡を扱う配信。相談・告発・当事者通話を引き出す配信フォーマットが出ている。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/825496911",
+        "url": "https://twitcasting.tv/knock2525/movie/825496911"
       },
       {
         "date": "2025年12月10日",
         "title": "ポケカメン女性との寝落ち通話発覚を扱う",
-        "text": "『ポケカメンが女性と寝落ち通話発覚！』としてYouTubeリンク付きで残る。ポケカメンの女性関係炎上を、ノック側が素材として大きく扱った回。",
-        "imageUrl": "",
+        "text": "ポケカメンが女性と寝落ち通話発覚としてYouTube化。ポケカメンの女性関係炎上を、ノック側が素材として大きく扱った回。",
+        "imageUrl": "https://i.ytimg.com/vi/Zo-DCyVy7hI/sddefault.jpg",
         "url": "https://www.youtube.com/watch?v=Zo-DCyVy7hI"
       },
       {
-        "date": "2025年12月12日〜14日",
-        "title": "ポケカメン妨害・暴露を連続で扱う",
-        "text": "ツイキャス履歴に『ポケカメンから妨害を受けました。配信界隈荒れすぎｗ』『ポケカメン暴露。悲しませたらあかん。』が連続して残る。ポケカメンとの対立・暴露がノック側の大きな話題になった。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
+        "date": "2025年12月12日",
+        "title": "ポケカメンから妨害を受けたと配信で主張",
+        "text": "ノック側のツイキャスで、ポケカメンから妨害を受けたという主張を含む枠が残る。配信者間対立がノック側の大きな話題になった。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/827847941",
+        "url": "https://twitcasting.tv/knock2525/movie/827847941"
       },
       {
-        "date": "2025年12月18日",
-        "title": "配信者紅白に出たぞ！振り返り",
-        "text": "ツイキャス履歴に配信者紅白の振り返りが残る。炎上以外にも、配信者イベントへ出る存在としての露出を示す素材。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
+        "date": "2025年12月14日",
+        "title": "ポケカメン暴露、悲しませたらあかん。",
+        "text": "ポケカメン暴露を掲げたツイキャス枠が残る。女性関係・妨害主張の流れとセットで見せる素材。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/827946960",
+        "url": "https://twitcasting.tv/knock2525/movie/827946960"
       },
       {
         "date": "2026年4月29日",
         "title": "ハッキングされた枠をYouTubeアーカイブ化",
-        "text": "『ハッキングされた』というYouTubeライブがツイキャス履歴から確認できる。アカウントや配信環境の被害・トラブルをそのまま配信素材にした回。",
-        "imageUrl": "",
+        "text": "ハッキング被害を配信素材にしたYouTubeライブ。アカウントや配信環境のトラブルをそのまま見せる回。",
+        "imageUrl": "https://i.ytimg.com/vi/Doq29JJOKGQ/hq720.jpg",
         "url": "https://youtube.com/live/Doq29JJOKGQ"
-      },
-      {
-        "date": "2026年5月5日",
-        "title": "コレコレさんを暴露した女性がブチギレ",
-        "text": "ツイキャス履歴に『コレコレさんを暴露した女性がブチギレ』が残る。コレコレ周辺の告発女性を扱い、通話と界隈ニュースを混ぜた回。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
       },
       {
         "date": "2026年5月14日",
         "title": "石川典行座談会・コレコレ旅行・ポケカメン告発系を扱う",
-        "text": "『石川典行座談会』『コレコレ旅行』『ポケカメンガチ犯罪行為告発』といった複数の配信者界隈トピックを一つの大型枠で扱った。横断的に炎上話題を束ねるノックの代表回。",
-        "imageUrl": "",
+        "text": "石川典行座談会、コレコレ旅行、ポケカメン告発系など、複数の配信者界隈トピックを一つの大型枠で扱った。横断的に炎上話題を束ねる代表回。",
+        "imageUrl": "https://i.ytimg.com/vi/HdcCZPksdhc/hq720.jpg",
         "url": "https://youtube.com/live/HdcCZPksdhc"
       },
       {
         "date": "2026年5月24日",
-        "title": "不動産喧嘩・生活保護不正受給の件で警察が来た枠",
-        "text": "ツイキャス履歴に、不動産との喧嘩や生活保護不正受給の件で警察が来たという枠が残る。相談・告発が現実の警察沙汰へつながるタイプの回。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
+        "title": "不動産喧嘩・生活保護不正受給相談で警察が来た枠",
+        "text": "不動産との喧嘩や生活保護不正受給相談で警察が来たという枠がツイキャスに残る。相談・告発が現実の警察沙汰へつながるタイプの回。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/835780149",
+        "url": "https://twitcasting.tv/knock2525/movie/835780149"
       },
       {
         "date": "2026年5月26日",
-        "title": "炎上しました。ごめんなさい。真実をお話します",
-        "text": "本人の炎上対応として『炎上しました。ごめんなさい。真実をお話します』が配信履歴に残る。ノック自身が批判の中心になった回として年表に入れる。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
+        "title": "本人炎上を謝罪し真実を話す枠",
+        "text": "本人の炎上対応として、謝罪と真実を話す趣旨の配信が残る。ノック自身が批判の中心になった回として年表に入れる。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/835875038",
+        "url": "https://twitcasting.tv/knock2525/movie/835875038"
       },
       {
         "date": "2026年5月30日",
         "title": "秘蔵エピソード公開",
-        "text": "YouTubeライブ付きで『秘蔵エピソード公開』が確認できる。普段の告発枠とは別に、本人の過去話・裏話を聞ける素材。",
-        "imageUrl": "",
+        "text": "普段の告発枠とは別に、本人の過去話・裏話を聞ける素材としてYouTubeライブが残る。",
+        "imageUrl": "https://i.ytimg.com/vi/m-2esIjqCh8/hq720.jpg",
         "url": "https://youtube.com/live/m-2esIjqCh8"
       },
       {
         "date": "2026年6月7日",
         "title": "育児放棄されていた犬猫救出が警察沙汰に",
-        "text": "ツイキャス履歴に『育児放棄されていた犬猫救出したら警察沙汰』が残る。保護・警察・配信者の現場介入が混ざった炎上/事件系トピック。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
+        "text": "育児放棄されていた犬猫を救出したら警察沙汰になったという枠が残る。現場介入・警察・配信者の判断が混ざった事件系トピック。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/836439854",
+        "url": "https://twitcasting.tv/knock2525/movie/836439854"
       },
       {
         "date": "2026年6月14日",
         "title": "ノック結婚破談危機が周辺配信で話題化",
-        "text": "猫こねこ側の配信履歴で『ノックさん結婚破断危機』が話題として確認できる。結婚相手の個人名や顔は公開確認できないため入れず、周辺配信で話題化した事実だけを残す。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/gesgest121/archive?page=0-812499559&type=history"
-      },
-      {
-        "date": "2026年6月16日",
-        "title": "海老蔵との通話でノック結婚ご祝儀が話題",
-        "text": "Xリアルタイム検索上で、海老蔵との通話、ノック結婚のご祝儀、KICK配信への言及が確認できる。結婚ネタが配信者同士の通話で広がった回。",
-        "imageUrl": "",
-        "url": "https://search.yahoo.co.jp/realtime/search?ei=UTF-8&ifr=tl_hash&p=%23%E6%B5%B7%E8%80%81%E8%94%B5&rkf=1"
+        "text": "猫こねこ側の配信履歴で、ノックさん結婚破談危機が話題として確認できる。結婚相手の個人名や顔は公開確認できないため入れず、周辺配信で話題化した事実だけを扱う。",
+        "imageUrl": "https://twitcasting.tv/gesgest121/twimage/812499559",
+        "url": "https://twitcasting.tv/gesgest121/movie/812499559"
       },
       {
         "date": "2026年6月19日",
         "title": "ポケカメン携帯の3人目アイドルやり取りを扱う",
-        "text": "ツイキャス履歴に『ポケカメンの携帯に3人目のアイドルとのやり取りがあったので晒します』が残る。ポケカメン12股炎上の追加燃料をノック側が扱った。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
+        "text": "ポケカメンの携帯に3人目のアイドルとのやり取りがあったとして扱うツイキャス枠が残る。ポケカメン12股炎上の追加燃料をノック側が扱った。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/836996266",
+        "url": "https://twitcasting.tv/knock2525/movie/836996266"
       },
       {
         "date": "2026年6月23日",
         "title": "30歳になったので全部出す",
-        "text": "ツイキャス履歴に『30歳になったので全部出す』が残る。本人の節目回であり、過去話や配信界隈の裏話を出す枠として使える。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
+        "text": "30歳になった節目で全部出すという配信が残る。本人の節目回であり、過去話や配信界隈の裏話を出す枠として使える。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/837179711",
+        "url": "https://twitcasting.tv/knock2525/movie/837179711"
       },
       {
         "date": "2026年6月30日",
-        "title": "ノックの彼女への「妊娠できなかったら別れる」発言が炎上",
-        "text": "ポケカメン側の切り抜きで、ノックの彼女への「妊娠できなかったら別れる」発言が炎上として取り上げられた。ノック本人の結婚/彼女周辺で視聴者が気にする話題として追記。",
-        "imageUrl": "",
+        "title": "彼女への発言が炎上として切り抜き化",
+        "text": "ポケカメン側の切り抜きで、ノックの彼女への発言が炎上として取り上げられた。ノック本人の結婚/彼女周辺で視聴者が気にする話題として重要。",
+        "imageUrl": "https://i.ytimg.com/vi/45Ha66qlImI/hq720.jpg",
         "url": "https://www.youtube.com/watch?v=45Ha66qlImI"
       },
       {
         "date": "2026年7月9日",
         "title": "配信者賭博・絶縁を扱う",
-        "text": "ツイキャス履歴に『配信者が賭博してたんか。絶縁』『俺も全部出す』が残る。配信者の賭博疑惑・絶縁を扱う炎上ウォッチ枠として重要。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=membership"
+        "text": "配信者の賭博疑惑・絶縁を扱う枠がツイキャスに残る。KICK/ふわっち周辺の違法賭博騒動を追う炎上ウォッチ枠として重要。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/837910001",
+        "url": "https://twitcasting.tv/knock2525/movie/837910001"
       },
       {
         "date": "2026年7月21日",
         "title": "引っ越ししたぞ",
-        "text": "ツイキャス履歴に引っ越し報告が残る。私生活の節目を配信で報告し、固定リスナーに追わせるタイプの本人年表として入れる。",
-        "imageUrl": "",
-        "url": "https://twitcasting.tv/knock2525/archive?type=popular"
+        "text": "引っ越し報告がツイキャス人気録画に残る。私生活の節目を配信で報告し、固定リスナーに追わせる本人年表。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/838456607",
+        "url": "https://twitcasting.tv/knock2525/movie/838456607"
       },
       {
         "date": "2026年7月30日",
         "title": "YouTubeコメント欄が大炎上",
-        "text": "ツイキャス人気録画に『YouTubeコメント欄が大炎上』が残る。YouTube視聴者側の荒れを本人が配信で扱った回。",
-        "imageUrl": "https://imagegw03.twitcasting.tv/image3/image.twitcasting.tv/image159_1/91/eb/31ffeb91-1-s.jpg",
+        "text": "YouTubeコメント欄が大炎上したとするツイキャス人気録画が残る。YouTube視聴者側の荒れを本人が配信で扱った回。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/838855569",
         "url": "https://twitcasting.tv/knock2525/movie/838855569"
       },
       {
         "date": "2026年8月14日",
         "title": "おい！ブチギレ！！が人気録画化",
-        "text": "ツイキャス人気録画に『おい！ブチギレ！！』が残る。怒り・通話・揉め事を短期で数字にするノックらしい枠。",
-        "imageUrl": "https://imagegw03.twitcasting.tv/image3/image.twitcasting.tv/image158_1/fc/27/320a27fc-1-s.jpg?__t=1786718474",
+        "text": "怒り・通話・揉め事を短期で数字にするノックらしい枠が人気録画として残る。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/839526396",
         "url": "https://twitcasting.tv/knock2525/movie/839526396"
       },
       {
         "date": "2026年8月19日",
         "title": "強盗にあった",
-        "text": "ツイキャス人気録画に『強盗にあった』が残る。本人のトラブルをそのまま配信素材化し、視聴者が顛末を追うタイプの話題。",
-        "imageUrl": "https://imagegw03.twitcasting.tv/image3/image.twitcasting.tv/image159_1/0f/6f/320d6f0f-1-s.jpg",
+        "text": "強盗にあったという本人トラブルをそのまま配信素材化。視聴者が顛末を追うタイプの大きな話題。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/839741199",
         "url": "https://twitcasting.tv/knock2525/movie/839741199"
       },
       {
         "date": "2026年8月30日",
         "title": "親族の挨拶してきた",
-        "text": "ツイキャス人気録画に「親族の挨拶してきた。。」が残る。結婚相手の詳細名は公開ソース上で確認できる範囲に限定し、本人の結婚/家族挨拶周辺の話題として記録。",
-        "imageUrl": "https://imagegw03.twitcasting.tv/image3/image.twitcasting.tv/image157_1/4e/ea/3214ea4e-1-s.jpg",
+        "text": "親族の挨拶をしてきたという録画が残る。結婚相手の詳細名は公開ソースで確認できる範囲に限定し、本人の結婚/家族挨拶周辺の話題として記録。",
+        "imageUrl": "https://twitcasting.tv/knock2525/twimage/840231502",
         "url": "https://twitcasting.tv/knock2525/movie/840231502"
       },
       {
         "date": "2026年9月3日",
-        "title": "YouTubeライブでブチギレ放送",
-        "text": "YouTubeライブ『ブチギレ放送』が確認できる。本人の怒り・界隈揉めをそのままタイトル化した近時の素材。",
-        "imageUrl": "https://imagegw03.twitcasting.tv/image3/image.twitcasting.tv/image158_1/8b/85/3217858b-1-s.jpg?__t=1788429907",
-        "url": "https://twitcasting.tv/knock2525/movie/840402315"
+        "title": "KICKで配信者荒れすぎ枠を実施",
+        "text": "KICKで『キック配信者荒れすぎ。許せねーよ！！』を配信。KICK側でも炎上ウォッチ型の配信を継続している近時素材。",
+        "imageUrl": "https://images.kick.com/video_thumbnails/eMjZCSL3dyA8/L4SaiUVIdLbw/720.webp",
+        "url": "https://kick.com/knock2525/videos/6f0af316c77818bb-"
       },
       {
-        "date": "2026年9月6日",
-        "title": "コレコレ心霊配信参加・プライベート飯が話題",
-        "text": "Xプロフィール系アーカイブで、コレコレ心霊配信参加やコレコレとのプライベート飯への言及が確認できる。コレコレ周辺に出入りする配信者としての近時の動き。",
-        "imageUrl": "",
-        "url": "https://we.twstalker.com/knock2525"
+        "date": "2026年9月12日",
+        "title": "ポケカメン側がノックさん暴露配信を実施",
+        "text": "ポケカメン側のKICKで『ノックさん暴露！！今から復讐する！！』が配信される。ノックとポケカメンの対立・暴露導線が9月時点でも継続。",
+        "imageUrl": "https://images.kick.com/video_thumbnails/abpPHYYojLih/VqObSZHFSQG7/720.webp",
+        "url": "https://kick.com/pokekamen/videos/41c26af4-"
       }
     ],
-    "intro": "ツイキャスを主戦場に、KICK、YouTubeライブ、Xを横断して活動する男性配信者。相談、当事者通話、配信者ニュース、炎上ウォッチ、コレコレ周辺との絡みを中心に、界隈の揉め事をリアルタイムで追わせるスタイルが強い。\n\n代表的な話題は、YouTube/TwitCastingのBAN報告、ポケカメン女性関係・寝落ち通話・妨害暴露、もんじょり/たくみ周辺の警察沙汰、コレコレ旅行、石川典行座談会、ハッキング、生活保護不正受給相談、本人炎上謝罪、育児放棄されていた犬猫救出で警察沙汰、配信者賭博と絶縁、結婚破談危機、海老蔵との通話での結婚ご祝儀、親族挨拶、強盗被害、YouTubeコメント欄炎上など。\n\n結婚相手については、相手の個人名・顔が確認できる公開ソースは見つかっていないため入れない。公開ソースで確認できる範囲として、親族挨拶、結婚破談危機、彼女への発言炎上は年表に含めている。図鑑では、公開配信やX上で確認できる『結婚が話題化した事実』『親族挨拶』『破談危機として周辺配信に出たこと』までを扱う。\n\n紹介するなら『ツイキャス発の相談・炎上ウォッチ型配信者。コレコレ周辺とKICK界隈をまたぎ、通話・暴露・BAN・警察沙汰・結婚話題まで、その時々の荒れた話題を拾って視聴者に見せるタイプ』。",
+    "intro": "ツイキャスを主戦場に、KICK、YouTubeライブ、Xを横断して活動する男性配信者。相談、当事者通話、配信者ニュース、炎上ウォッチ、コレコレ周辺との絡みを中心に、界隈の揉め事をリアルタイムで追わせるスタイルが強い。\n\n本人が中心になった話題として、2020年の彼女の妊娠・中絶/別女性ファンとの関係炎上、YouTube/TwitCastingのBAN・制限報告、ポケカメン女性関係・寝落ち通話・妨害暴露、コレコレ旅行、ハッキング、生活保護不正受給相談で警察が来た枠、本人炎上謝罪、育児放棄されていた犬猫救出で警察沙汰、配信者賭博と絶縁、結婚破談危機、親族挨拶、強盗被害、YouTubeコメント欄炎上などがある。\n\n結婚相手については、相手の個人名・顔が確認できる公開ソースは見つかっていないため入れない。公開ソースで確認できる範囲として、親族挨拶、結婚破談危機、彼女への発言炎上を年表に含める。\n\n紹介するなら『ツイキャス発の相談・炎上ウォッチ型配信者。コレコレ周辺とKICK界隈をまたぎ、通話・暴露・BAN・警察沙汰・結婚話題まで、その時々の荒れた話題を拾って視聴者に見せるタイプ』。",
     "id": "knock",
     "bodyImageUrl": ""
   }
